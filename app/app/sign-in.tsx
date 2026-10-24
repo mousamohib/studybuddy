@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, View } from 'react-native';
-import { Button, Card, Field, Screen, T } from '@/components/ui';
+import { router } from 'expo-router';
+import { Button, Card, Field, LinkText, Row, Screen, T } from '@/components/ui';
 import { isConfigured, supabase } from '@/lib/supabase';
 import { space, useTheme } from '@/lib/theme';
 
@@ -68,6 +69,7 @@ export default function SignIn() {
                 <View style={{ width: 20, height: 20, borderRadius: 4, borderWidth: 1.5, borderColor: adult ? t.accent : t.muted, backgroundColor: adult ? t.accent : 'transparent' }} />
                 <T variant="small">I'm 17 or older and agree to the Terms and Privacy Policy</T>
               </Pressable>
+              <Row><LinkText title="Terms of Use" onPress={() => router.push({ pathname: '/legal', params: { doc: 'terms' } })} /><LinkText title="Privacy Policy" onPress={() => router.push({ pathname: '/legal', params: { doc: 'privacy' } })} /></Row>
             </>
           )}
           {msg && <T variant="small" style={{ color: msg.bad ? t.danger : t.good }}>{msg.text}</T>}

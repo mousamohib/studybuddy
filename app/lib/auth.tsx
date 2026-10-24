@@ -9,6 +9,7 @@ type Account = {
   loading: boolean;
   plan: Plan;
   trialEndsAt: string | null;
+  onboarded: boolean | null;
   usage: Usage;
   limits: (typeof LIMITS)[Plan];
   refresh: () => Promise<void>;
@@ -23,6 +24,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [plan, setPlan] = useState<Plan>('free');
   const [trialEndsAt, setTrialEndsAt] = useState<string | null>(null);
   const [usage, setUsage] = useState<Usage>(emptyUsage);
+  const [onboarded, setOnboarded] = useState<boolean | null>(null);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => { setSession(data.session); setLoading(false); });
@@ -33,20 +35,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const refresh = useCallback(async () => {
     if (!session) return;
     const month = new Date().toISOString().slice(0, 7);
-    const [{ data: s }, { data: u }] = await Promise.all([
+    const [{ data: s }, { data: u }, { data: p }] = await Promise.all([
       supabase.from('subscriptions').select('plan, trial_ends_at').maybeSingle(),
       supabase.from('usage').select('*').eq('month', month).maybeSingle(),
+      supabase.from('profiles').select('onboarded').maybeSingle(),
     ]);
+    setOnboarded(p ? !!p.onboarded : true);
     const isPro = s?.plan === 'pro' || (s?.plan === 'trial' && s.trial_ends_at && new Date(s.trial_ends_at) > new Date());
     setPlan(isPro ? 'pro' : 'free');
     setTrialEndsAt(s?.plan === 'trial' ? s.trial_ends_at : null);
     setUsage(u ? { ...emptyUsage, ...u } : emptyUsage);
   }, [session]);
 
-  useEffect(() => { refresh(); }, [refresh]);
+  useEffect(() => { if (session) refresh(); else setOnboarded(null); }, [refresh, session]);
 
   return (
-    <Ctx.Provider value={{ session, loading, plan, trialEndsAt, usage, limits: LIMITS[plan], refresh }}>
+    <Ctx.Provider value={{ session, loading: loading || (!!session && onboarded === null), plan, trialEndsAt, onboarded, usage, limits: LIMITS[plan], refresh }}>
       {children}
     </Ctx.Provider>
   );

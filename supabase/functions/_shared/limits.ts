@@ -12,14 +12,17 @@ export type Tier = "fast" | "standard" | "strong";
 export const JOBS: Record<string, { tier: Tier; counts: UsageField | null; maxTokens: number }> = {
   chat: { tier: "standard", counts: "tutor_messages", maxTokens: 4000 },
   reshape: { tier: "standard", counts: "tutor_messages", maxTokens: 4000 },
+  upload: { tier: "fast", counts: "uploads", maxTokens: 3000 },
   outline: { tier: "fast", counts: null, maxTokens: 3000 },
+  vision: { tier: "standard", counts: null, maxTokens: 4000 },
+  announcement: { tier: "standard", counts: null, maxTokens: 4000 },
   memory: { tier: "fast", counts: null, maxTokens: 500 },
   syllabus: { tier: "standard", counts: null, maxTokens: 6000 },
-  plan: { tier: "strong", counts: null, maxTokens: 16000 },
+  plan: { tier: "strong", counts: null, maxTokens: 14000 },
   weekly_sheet: { tier: "standard", counts: "weekly_sheets", maxTokens: 8000 },
   exam_sheet: { tier: "strong", counts: "exam_sheets", maxTokens: 12000 },
   derivation_sheet: { tier: "strong", counts: "exam_sheets", maxTokens: 12000 },
-  paper: { tier: "strong", counts: "papers", maxTokens: 16000 },
+  paper: { tier: "strong", counts: "papers", maxTokens: 14000 },
 };
 
 // Model per tier: set in Supabase secrets so you can switch without an app update.

@@ -4,19 +4,23 @@ An AI study app for university and college students: upload a syllabus and cours
 
 - `app/`: the Expo app (iOS, Android, web), Expo SDK 57 so it runs in **Expo Go**
 - `supabase/migrations/`: the database (tables, privacy rules, limits)
-- `supabase/functions/ai`: the AI gateway (plan limits, model tiers, cost tracking, demo mode)
+- `supabase/functions/ai`: the tutor (streaming answers, reshaping an answer, memory and revisit list)
+- `supabase/functions/process-file`: reads uploaded files (PDF, PowerPoint, Word, zip, code, notebooks, photos) and outlines them
+- `supabase/functions/jobs`: background work (syllabus setup, prof messages, study plan, weekly/exam/derivation sheets, practice papers)
 - `supabase/functions/delete-account`: deletes a user's files and account
+- `supabase/functions/_shared`: plan limits, model tiers, cost tracking, prompts, demo mode
 
 ## Build progress
 
 | Step | What | Status |
 | --- | --- | --- |
 | 1 | Foundation: tabs, sign-in, database, AI gateway with limits, paywall placeholder | Done |
-| 2 | Courses and files: uploads, readers, outlines, assignment tabs | Next |
-| 3 | Syllabus setup, study plan, calendar sync, notifications | |
-| 4 | Tutor: course chats, modes, teaching styles, memory, revisit list | |
-| 5 | Exam prep: weekly sheets, exam and derivation sheets, practice papers, share and download | |
-| 6 | Polish for friends: onboarding, legal pages, report button | |
+| 2 | Courses and files: uploads, readers, outlines, assignment tabs | Done |
+| 3 | Syllabus setup, study plan, calendar sync, notifications | Done |
+| 4 | Tutor: course chats, teaching styles, reshape any answer, memory, revisit list | Done |
+| 5 | Exam prep: weekly sheets, exam and derivation sheets, practice papers, share and download | Done |
+| 6 | Polish for friends: onboarding, legal pages, report button, data export | Done |
+| Later | Group project memory, Apple/Google sign-in, real payments, push notifications from the server | |
 
 ## One-time setup (about 15 minutes)
 
@@ -24,7 +28,7 @@ You need Node.js 20+ on your laptop and the **Expo Go** app on your phone.
 
 ### 1. Create the database
 
-Supabase dashboard → **SQL Editor** → **New query** → paste all of `supabase/migrations/0001_init.sql` → **Run**.
+Supabase dashboard → **SQL Editor** → **New query** → paste all of `supabase/migrations/0001_init.sql` → **Run**. Then do the same with `0002_tutor_and_sharing.sql`. Run them in that order, once each.
 
 ### 2. Sign-in settings (for testing)
 
@@ -46,10 +50,12 @@ npm install
 npx supabase login
 npx supabase link --project-ref uueawkqexfisdfsgibwf
 npx supabase functions deploy ai
+npx supabase functions deploy process-file
+npx supabase functions deploy jobs
 npx supabase functions deploy delete-account
 ```
 
-With no AI key set, the `ai` function runs in **demo mode**: it returns sample answers and costs nothing, but still counts usage, so limits can be tested.
+With no AI key set, everything runs in **demo mode**: files are really read and outlined, syllabus dates are picked out, and the study plan is really built, but tutor answers, sheets and papers are sample text. It costs nothing and still counts usage, so limits can be tested.
 
 ### 5. Run it on your phone
 
@@ -58,7 +64,18 @@ cd app
 npx expo start
 ```
 
-Scan the QR code with the Camera app (iPhone) or Expo Go (Android).
+Scan the QR code with the Camera app (iPhone) or Expo Go (Android). Press `w` in the terminal to open the web version.
+
+### 6. Share links (optional)
+
+Share links point to the web version. Once it's hosted (for example `npx expo export --platform web` and upload the `dist` folder to Netlify or Vercel), add `EXPO_PUBLIC_WEB_URL=https://your-site` to `app/.env`. Until then, Share shows a message instead of a link; Download works without it.
+
+### Things to know when testing in Expo Go
+
+- Reminders are local notifications scheduled on the phone (daily plan at 8:30, deadlines, exam countdowns). Push notifications from the server need a full app build.
+- Calendar sync adds a separate "StudyBuddy" calendar on the phone. It is phone-only, not web.
+- Dates are typed as `YYYY-MM-DD HH:MM`.
+- Big files take a little while: each server task can run for about 150 seconds on Supabase's free plan.
 
 ## Turning on real AI (later)
 

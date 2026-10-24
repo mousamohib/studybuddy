@@ -90,3 +90,48 @@ export function Meter({ label, used, limit }: { label: string; used: number; lim
     </View>
   );
 }
+
+export function Segments<K extends string>({ items, value, onChange }: { items: { key: K; label: string }[]; value: K; onChange: (k: K) => void }) {
+  const t = useTheme();
+  return (
+    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6 }}>
+      {items.map((it) => (
+        <Pressable key={it.key} onPress={() => onChange(it.key)} accessibilityRole="tab" accessibilityState={{ selected: value === it.key }}
+          style={{ paddingVertical: 7, paddingHorizontal: 12, borderRadius: 999, backgroundColor: value === it.key ? t.text : t.surface }}>
+          <Text style={{ color: value === it.key ? t.bg : t.text, fontSize: 13, fontWeight: '600' }}>{it.label}</Text>
+        </Pressable>
+      ))}
+    </ScrollView>
+  );
+}
+
+export function Pill({ label, color }: { label: string; color?: string }) {
+  const t = useTheme();
+  return (
+    <View style={{ alignSelf: 'flex-start', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 999, backgroundColor: t.surface }}>
+      <Text style={{ fontSize: 11, fontWeight: '600', color: color ?? t.muted, letterSpacing: 0.3 }}>{label}</Text>
+    </View>
+  );
+}
+
+export function Row({ children, style }: { children: ReactNode; style?: StyleProp<ViewStyle> }) {
+  return <View style={[{ flexDirection: 'row', alignItems: 'center', gap: space.sm, flexWrap: 'wrap' }, style]}>{children}</View>;
+}
+
+export function LinkText({ title, onPress, color }: { title: string; onPress: () => void; color?: string }) {
+  const t = useTheme();
+  return (
+    <Pressable onPress={onPress} hitSlop={8} accessibilityRole="button">
+      <Text style={{ color: color ?? t.accent, fontSize: 14, fontWeight: '600' }}>{title}</Text>
+    </Pressable>
+  );
+}
+
+export function Progress({ value }: { value: number }) {
+  const t = useTheme();
+  return (
+    <View style={{ height: 6, backgroundColor: t.surface, borderRadius: 3, overflow: 'hidden' }}>
+      <View style={{ width: `${Math.max(0, Math.min(1, value)) * 100}%`, height: '100%', backgroundColor: t.accent }} />
+    </View>
+  );
+}

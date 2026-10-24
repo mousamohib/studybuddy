@@ -1,75 +1,69 @@
-import { router } from 'expo-router';
-import { useRef, useState } from 'react';
-import { FlatList, KeyboardAvoidingView, Platform, TextInput, View } from 'react-native';
-import { Button, Card, T } from '@/components/ui';
-import { AIError, askAI, type Msg } from '@/lib/ai';
-import { useAccount } from '@/lib/auth';
-import { radius, space, useTheme } from '@/lib/theme';
+import { router, useFocusEffect } from 'expo-router';
+import { useCallback, useState } from 'react';
+import { Pressable, View } from 'react-native';
+import { Button, Card, Field, Pill, Row, Screen, T } from '@/components/ui';
+import { useNotice } from '@/components/Menu';
+import { openNewChat } from '@/lib/chats';
+import { courseColour, MODE_LABEL, type ChatRow, type Course } from '@/lib/data';
+import { supabase } from '@/lib/supabase';
+import { space, useTheme } from '@/lib/theme';
 
-// Step 1: one test chat to prove the AI gateway, limits and demo mode work end to end.
-// Step 4 replaces this with per-course chats, modes, styles and memory.
-export default function Chat() {
+export default function ChatTab() {
   const t = useTheme();
-  const { usage, limits, refresh } = useAccount();
-  const [msgs, setMsgs] = useState<(Msg & { demo?: boolean })[]>([]);
-  const [text, setText] = useState('');
-  const [busy, setBusy] = useState(false);
-  const [err, setErr] = useState<{ text: string; upgrade?: boolean } | null>(null);
-  const list = useRef<FlatList>(null);
+  const notice = useNotice();
+  const [chats, setChats] = useState<ChatRow[]>([]);
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [filter, setFilter] = useState<string | 'all' | 'general'>('all');
+  const [q, setQ] = useState('');
 
-  async function send() {
-    const q = text.trim();
-    if (!q || busy) return;
-    setErr(null); setText('');
-    const next = [...msgs, { role: 'user' as const, content: q }];
-    setMsgs(next); setBusy(true);
-    try {
-      const r = await askAI('chat', next.map(({ role, content }) => ({ role, content })),
-        'You are StudyBuddy, a friendly tutor for university students. Explain in simple, plain English.');
-      setMsgs([...next, { role: 'assistant', content: r.text, demo: r.demo }]);
-    } catch (e) {
-      const a = e as AIError;
-      setErr({ text: a.message, upgrade: a.code === 'limit_reached' });
-    } finally {
-      setBusy(false); refresh();
-      setTimeout(() => list.current?.scrollToEnd({ animated: true }), 50);
-    }
+  useFocusEffect(useCallback(() => {
+    Promise.all([
+      supabase.from('chats').select('id, course_id, mode, title, style, modifier, material_ids, deadline_id, updated_at').order('updated_at', { ascending: false }).limit(100),
+      supabase.from('courses').select('*').order('created_at'),
+    ]).then(([a, b]) => { setChats((a.data ?? []) as ChatRow[]); setCourses((b.data ?? []) as Course[]); });
+  }, []));
+
+  const shown = chats.filter((c) => filter === 'all' || (filter === 'general' ? !c.course_id : c.course_id === filter));
+  const course = (id: string | null) => courses.find((c) => c.id === id);
+
+  async function ask() {
+    if (!q.trim()) return;
+    const c = filter !== 'all' && filter !== 'general' ? course(filter) : undefined;
+    try { await openNewChat({ courseId: c?.id ?? null, mode: 'ask', topic: q, courseCode: c?.code }); setQ(''); }
+    catch (e) { notice("Couldn't start the chat", (e as Error).message); }
   }
 
   return (
-    <KeyboardAvoidingView style={{ flex: 1, backgroundColor: t.bg }} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={90}>
-      <FlatList ref={list} data={msgs} keyExtractor={(_, i) => String(i)}
-        contentContainerStyle={{ padding: space.lg, gap: space.md, flexGrow: 1 }}
-        ListEmptyComponent={
-          <Card>
-            <T variant="heading">Ask StudyBuddy anything</T>
-            <T muted>This is a test chat. Course chats with teaching styles arrive in build step 4.</T>
-            <T variant="small" muted>{usage.tutor_messages} of {limits.tutor_messages >= 1000 ? 'unlimited' : limits.tutor_messages} messages used this month</T>
-          </Card>
-        }
-        renderItem={({ item }) => item.role === 'user' ? (
-          <View style={{ alignSelf: 'flex-end', maxWidth: '85%', backgroundColor: t.surface, borderRadius: radius.lg, padding: space.md }}>
-            <T>{item.content}</T>
-          </View>
-        ) : (
-          <View style={{ gap: 4 }}>
-            <T>{item.content}</T>
-            {item.demo ? <T variant="small" muted>Demo answer: real AI is off</T> : null}
-          </View>
-        )}
-        ListFooterComponent={busy ? <T muted>Thinking…</T> : null}
-      />
-      {err && (
-        <View style={{ paddingHorizontal: space.lg, gap: space.sm }}>
-          <T variant="small" style={{ color: t.danger }}>{err.text}</T>
-          {err.upgrade && <Button title="See Pro" kind="secondary" onPress={() => router.push('/paywall')} />}
-        </View>
-      )}
-      <View style={{ flexDirection: 'row', gap: space.sm, padding: space.md, borderTopWidth: 1, borderColor: t.border }}>
-        <TextInput value={text} onChangeText={setText} placeholder="Message StudyBuddy…" placeholderTextColor={t.muted} multiline
-          style={{ flex: 1, color: t.text, backgroundColor: t.surface, borderRadius: radius.md, paddingHorizontal: space.md, paddingVertical: 10, maxHeight: 140, fontSize: 15 }} />
-        <Button title="Send" onPress={send} disabled={!text.trim()} loading={busy} />
-      </View>
-    </KeyboardAvoidingView>
+    <Screen>
+      <T variant="title">Chats</T>
+      <Row>
+        {[{ id: 'all', label: 'All' }, ...courses.map((c) => ({ id: c.id, label: c.code })), { id: 'general', label: 'General' }].map((f) => (
+          <Pressable key={f.id} onPress={() => setFilter(f.id)} style={{ paddingVertical: 6, paddingHorizontal: 12, borderRadius: 999, backgroundColor: filter === f.id ? t.text : t.surface }}>
+            <T variant="small" style={{ color: filter === f.id ? t.bg : t.text, fontWeight: '600' }}>{f.label}</T>
+          </Pressable>
+        ))}
+      </Row>
+      <Card style={{ gap: space.sm }}>
+        <Field placeholder={filter !== 'all' && filter !== 'general' ? `Ask about ${course(filter)?.code}…` : 'Ask anything…'} value={q} onChangeText={setQ} multiline />
+        <Row><Button title="Ask" onPress={ask} disabled={!q.trim()} />
+          {filter !== 'all' && filter !== 'general' && <Button title="More chat types" kind="ghost" onPress={() => router.push({ pathname: '/course/[id]', params: { id: filter, section: 'chats' } })} />}
+        </Row>
+      </Card>
+      {shown.length === 0 && <T muted>No chats yet. Lessons, practice sets and assignment help start from a course, or from Start on a planned session.</T>}
+      {shown.map((ch) => {
+        const c = course(ch.course_id), i = courses.findIndex((x) => x.id === ch.course_id);
+        return (
+          <Pressable key={ch.id} onPress={() => router.push({ pathname: '/chat/[id]', params: { id: ch.id } })}>
+            <Card style={{ flexDirection: 'row', gap: space.md }}>
+              <View style={{ width: 4, borderRadius: 2, backgroundColor: c ? courseColour(c, i) : t.border }} />
+              <View style={{ flex: 1, gap: 4 }}>
+                <T style={{ fontWeight: '600' }}>{ch.title}</T>
+                <Row><Pill label={c?.code ?? 'General'} /><Pill label={MODE_LABEL[ch.mode]} /><T variant="small" muted>{new Date(ch.updated_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</T></Row>
+              </View>
+            </Card>
+          </Pressable>
+        );
+      })}
+    </Screen>
   );
 }

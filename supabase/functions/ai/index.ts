@@ -1,101 +1,160 @@
-// The AI gateway. Every AI request from the app comes here.
-// It checks who is asking, their plan and monthly limits, picks the model tier for the job,
-// calls the AI provider (or returns a demo answer), and records usage and cost.
-import { createClient } from "npm:@supabase/supabase-js@2";
-import { JOBS, LIMITS, modelFor, pricePerMTok, type Plan } from "../_shared/limits.ts";
+// The tutor. Builds each chat's context on the server (teaching style, course rules, memory,
+// deadlines, today's plan, the chat's files), streams the answer back as newline-delimited JSON,
+// saves the conversation, and files [[remember: …]] / [[revisit: …]] notes.
+//   {"t":"delta","v":"text"} … then {"t":"done","message":{…},"saved":[…]}  or  {"t":"error","code","message"}
+import { checkAllowed, isDemo, LimitError, recordUsage, streamAI, type Msg } from "../_shared/ai.ts";
+import { demoChat } from "../_shared/demo.ts";
+import { cors, getCtx, json } from "../_shared/http.ts";
+import { JOBS } from "../_shared/limits.ts";
+import { type Course, deadlinesText, materialsText, type Outline, outlineText, type Profile, RESHAPE, rulesBlock } from "../_shared/prompts.ts";
 
-const cors = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
+type ChatMsg = { role: "user" | "assistant"; content: string; ts?: number; saved?: string[]; original?: string; shape?: string; interrupted?: boolean };
+const MODIFIER_TEXT: Record<string, string> = {
+  simpler: "explain everything more simply, with plainer words and everyday analogies",
+  detail: "go into more detail and depth",
+  maths: "be more mathematical: precise notation and every derivation step",
+  intuition: "focus on intuition and theory: why things work",
+  example: "build explanations around fully worked examples",
 };
-const json = (status: number, body: unknown) =>
-  new Response(JSON.stringify(body), { status, headers: { ...cors, "Content-Type": "application/json" } });
-
-type Msg = { role: "user" | "assistant"; content: string };
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
-  if (req.method !== "POST") return json(405, { code: "method_not_allowed" });
+  const ctx = await getCtx(req);
+  if (ctx instanceof Response) return ctx;
+  const { admin, user } = ctx;
+  const body = await req.json().catch(() => ({}));
+  const mode: "chat" | "reshape" = body.mode === "reshape" ? "reshape" : "chat";
 
-  const url = Deno.env.get("SUPABASE_URL")!;
-  const anon = Deno.env.get("SUPABASE_ANON_KEY")!;
-  const service = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-  const authHeader = req.headers.get("Authorization") ?? "";
-
-  // 1. Who is asking?
-  const userClient = createClient(url, anon, { global: { headers: { Authorization: authHeader } } });
-  const { data: { user } } = await userClient.auth.getUser();
-  if (!user) return json(401, { code: "not_signed_in", message: "Sign in again." });
-  const admin = createClient(url, service);
-
-  // 2. What job?
-  let body: { job?: string; system?: string; messages?: Msg[] };
-  try { body = await req.json(); } catch { return json(400, { code: "bad_request", message: "Body must be JSON." }); }
-  const job = JOBS[body.job ?? ""];
-  if (!job) return json(400, { code: "bad_job", message: `Unknown job "${body.job}".` });
-  const messages = (body.messages ?? []).filter((m) => m && typeof m.content === "string" && m.content.trim());
-  if (!messages.length || messages[messages.length - 1].role !== "user") {
-    return json(400, { code: "bad_request", message: "messages must end with a user message." });
-  }
-  const promptChars = messages.reduce((a, m) => a + m.content.length, 0) + (body.system?.length ?? 0);
-  if (promptChars > 600_000) return json(413, { code: "too_large", message: "Too much material for one request. Untick some files." });
-
-  // 3. Plan and limits
-  const { data: planRow } = await admin.rpc("effective_plan", { uid: user.id });
-  const plan: Plan = planRow === "pro" ? "pro" : "free";
-  const month = new Date().toISOString().slice(0, 7);
-  const { data: usage } = await admin.from("usage").select("*").eq("user_id", user.id).eq("month", month).maybeSingle();
-  if (job.counts) {
-    const used = (usage?.[job.counts] as number | undefined) ?? 0;
-    const limit = LIMITS[plan][job.counts];
-    if (used >= limit) {
-      return json(402, { code: "limit_reached", field: job.counts, used, limit, plan,
-        message: plan === "free" ? "You've used this month's free allowance. Upgrade to Pro for more." : "You've reached this month's limit." });
-    }
-  }
-  const userCap = Number(Deno.env.get(plan === "pro" ? "USER_MONTHLY_COST_USD_PRO" : "USER_MONTHLY_COST_USD_FREE") ?? (plan === "pro" ? 8 : 0.5));
-  if (Number(usage?.cost_usd ?? 0) >= userCap) {
-    return json(402, { code: "cost_cap", message: "You've reached this month's AI usage cap." });
-  }
-  const budget = Number(Deno.env.get("AI_MONTHLY_BUDGET_USD") ?? 50);
-  const { data: totalRows } = await admin.from("usage").select("cost_usd").eq("month", month);
-  const spent = (totalRows ?? []).reduce((a: number, r: { cost_usd: number }) => a + Number(r.cost_usd), 0);
-  if (spent >= budget) return json(503, { code: "budget_reached", message: "StudyBuddy has hit its AI budget for this month. Try again later." });
-
-  // 4. Demo mode (no API key yet, or AI_MODE=demo): realistic placeholder, no cost.
-  const apiKey = Deno.env.get("ANTHROPIC_API_KEY");
-  const demo = Deno.env.get("AI_MODE") === "demo" || !apiKey;
-  const model = modelFor(job.tier);
-  if (demo) {
-    await admin.rpc("add_usage", { uid: user.id, field: job.counts ?? "none", amount: job.counts ? 1 : 0 });
-    return json(200, { text: demoAnswer(body.job!, messages.at(-1)!.content), model: "demo", tier: job.tier, demo: true });
+  const { data: chat } = await admin.from("chats").select("*").eq("id", body.chat_id).eq("user_id", user.id).maybeSingle();
+  if (!chat) return json(404, { code: "not_found", message: "Chat not found." });
+  try { await checkAllowed(admin, user.id, mode); } catch (e) {
+    if (e instanceof LimitError) return json(e.status, { code: e.code, message: e.message, ...e.extra });
+    throw e;
   }
 
-  // 5. Real AI call
-  const r = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: { "x-api-key": apiKey!, "anthropic-version": "2023-06-01", "content-type": "application/json" },
-    body: JSON.stringify({ model, max_tokens: job.maxTokens, system: body.system ?? undefined, messages }),
+  const [{ data: profile }, { data: course }, { data: memory }, { data: deadlines }, { data: courses }, { data: plan }] = await Promise.all([
+    admin.from("profiles").select("*").eq("id", user.id).single(),
+    chat.course_id ? admin.from("courses").select("*").eq("id", chat.course_id).single() : Promise.resolve({ data: null }),
+    admin.from("memory").select("kind, text").eq("user_id", user.id).eq("done", false).or(chat.course_id ? `course_id.eq.${chat.course_id}` : "course_id.is.null"),
+    admin.from("deadlines").select("*").eq("user_id", user.id),
+    admin.from("courses").select("id, code").eq("user_id", user.id),
+    admin.from("plans").select("days, done").eq("user_id", user.id).maybeSingle(),
+  ]);
+  const codeOf = (id: string) => (courses ?? []).find((c: { id: string }) => c.id === id)?.code ?? "?";
+  const c = course as Course | null;
+  const dl = chat.deadline_id ? (deadlines ?? []).find((d: { id: string }) => d.id === chat.deadline_id) : null;
+
+  // What has been taught in this course, so assignment help stays within it.
+  let scope = "";
+  if (c) {
+    const { data: mats } = await admin.from("materials").select("file_name, outline").eq("user_id", user.id).eq("course_id", c.id).is("deadline_id", null).eq("status", "ready");
+    const taught = (mats ?? []).filter((m: { outline: Outline | null }) => !["assignment", "syllabus"].includes(m.outline?.kind ?? ""));
+    scope = chat.mode === "assignment"
+      ? `# What has been taught in ${c.code}\n${taught.map((m: { file_name: string; outline: Outline }) => `- ${m.file_name}\n${outlineText(m.outline)}`).join("\n") || "(no lecture material uploaded yet)"}\nFor this assignment, only use concepts and techniques from the taught material above or the assignment's own files. If the task seems to need something beyond that, say so and point to the closest taught topic.`
+      : `# Syllabus\nThe ${c.code} study materials are the syllabus for its tests${taught.length ? `: ${taught.map((m: { file_name: string }) => m.file_name).join(", ")}` : ""}. Keep teaching and practice within that scope unless asked to go further.`;
+  }
+  const todayKey = new Date().toISOString().slice(0, 10);
+  const todays = ((plan?.days ?? []) as { date: string; sessions: { id: string; course: string; title: string; minutes: number }[] }[]).find((d) => d.date === todayKey)?.sessions ?? [];
+  const mats = await materialsText(admin, user.id, chat.material_ids ?? [], chat.mode === "assignment" ? 110_000 : 140_000);
+  const facts = (memory ?? []).filter((m: { kind: string }) => m.kind === "fact").map((m: { text: string }) => `- ${m.text}`).join("\n");
+
+  const system = `You are StudyBuddy, a study tutor inside a student app${c ? `, in the student's ${c.code} workspace` : ""}. Today is ${todayKey}.
+${rulesBlock(profile as Profile, c, chat.style, chat.modifier ? MODIFIER_TEXT[chat.modifier] ?? chat.modifier : null)}
+
+# ${c ? `${c.code} memory` : "Memory"} (keep in mind)
+${facts || "(empty)"}
+
+# Upcoming deadlines${c ? ` for ${c.code}` : ""}
+${deadlinesText((deadlines ?? []).filter((d: { course_id: string }) => !c || d.course_id === c.id), codeOf)}
+
+# Today's planned sessions
+${todays.map((s) => `- ${s.course}: ${s.title} (${s.minutes} min)`).join("\n") || "(none)"}
+${dl ? `\n# This chat is about: ${codeOf(dl.course_id)} ${dl.kind}${dl.label ? ` ${dl.label}` : ""}, due ${dl.due_at.slice(0, 10)}${dl.covers ? `. ${dl.covers}` : ""}` : ""}
+${chat.mode === "lesson" ? "\n# Mode: teach a topic in full, following the teaching rules." : chat.mode === "practice" ? "\n# Mode: practice. Give questions first; hold worked solutions until the student answers or asks." : chat.mode === "coding" ? "\n# Mode: coding practice. Short recap, one worked example, then exercises of increasing difficulty with hints; full solutions only on request." : chat.mode === "assignment" ? "\n# Mode: assignment help." : ""}
+${scope}
+${mats ? `\n# Course materials for this chat ([p. N] / [slide N] markers are page numbers: use them only to name the source once)\n${mats}` : ""}
+
+# Remembering things
+If the student tells you a lasting fact about their situation (a weak spot, a decision, exam details, a preference), end your reply with one line per NEW fact: [[remember: the fact]]. If they say they want to come back to a topic later, add [[revisit: the topic]]. Most replies need neither.
+
+# Format
+Markdown. All maths in LaTeX: $…$ inline, $$…$$ on its own line. Code in fenced blocks with a language.`;
+
+  const history: ChatMsg[] = Array.isArray(chat.messages) ? chat.messages : [];
+  let base: ChatMsg[], prompt: string, reshapeIndex = -1;
+  if (mode === "reshape") {
+    reshapeIndex = Number(body.index);
+    if (history[reshapeIndex]?.role !== "assistant" || !RESHAPE[body.style]) return json(400, { code: "bad_request", message: "Can't reshape that message." });
+    base = history.slice(0, reshapeIndex + 1).map((m, i) => i === reshapeIndex && m.original ? { ...m, content: m.original } : m);
+    prompt = RESHAPE[body.style];
+  } else if (body.regenerate) {
+    const i = history.map((m) => m.role).lastIndexOf("user");
+    if (i < 0) return json(400, { code: "bad_request", message: "Nothing to regenerate." });
+    base = history.slice(0, i); prompt = history[i].content;
+  } else {
+    prompt = String(body.text ?? "").trim();
+    if (!prompt) return json(400, { code: "bad_request", message: "Type a message first." });
+    base = history;
+  }
+  // Keep the last ~60k characters of conversation, starting on a user turn.
+  let hist = base.map((m) => ({ role: m.role, content: m.content }));
+  let size = hist.reduce((a, m) => a + m.content.length, 0);
+  while (size > 60_000 && hist.length > 2) { size -= hist[0].content.length; hist = hist.slice(1); }
+  while (hist.length && hist[0].role !== "user") hist = hist.slice(1);
+  const messages: Msg[] = [...hist, { role: "user", content: prompt }];
+
+  const job = JOBS[mode];
+  const enc = new TextEncoder();
+  const stream = new ReadableStream({
+    async start(ctrl) {
+      const send = (o: unknown) => ctrl.enqueue(enc.encode(JSON.stringify(o) + "\n"));
+      let text = "", inTok = 0, outTok = 0, truncated = false;
+      try {
+        if (isDemo()) {
+          const demo = mode === "reshape" ? `**Demo rewrite (${body.style})**\n\n${history[reshapeIndex].original ?? history[reshapeIndex].content}` : demoChat(prompt);
+          for (const piece of demo.match(/.{1,24}/gs) ?? []) { text += piece; send({ t: "delta", v: piece }); await new Promise((r) => setTimeout(r, 25)); }
+        } else {
+          for await (const ev of streamAI({ tier: job.tier, maxTokens: job.maxTokens, system, messages })) {
+            if (ev.delta) { text += ev.delta; send({ t: "delta", v: ev.delta }); }
+            if (ev.done) ({ inTok, outTok, truncated } = ev.done);
+          }
+        }
+      } catch (e) {
+        send({ t: "error", code: e instanceof LimitError ? e.code : "provider_error", message: e instanceof LimitError ? e.message : "The AI service had a problem. Try again." });
+        if (!text) { ctrl.close(); return; }
+      }
+
+      // File memory notes and strip the tags.
+      const saved: string[] = [];
+      const rows: { user_id: string; course_id: string | null; kind: string; text: string; source: string }[] = [];
+      for (const m of text.matchAll(/\[\[(remember|revisit):\s*([\s\S]*?)\]\]/gi)) {
+        const fact = m[2].trim().slice(0, 300);
+        if (!fact) continue;
+        const kind = m[1].toLowerCase() === "revisit" ? "revisit" : "fact";
+        rows.push({ user_id: user.id, course_id: chat.course_id, kind, text: fact, source: "chat" });
+        saved.push(kind === "revisit" ? `Revisit later: ${fact}` : fact);
+      }
+      if (rows.length) await admin.from("memory").insert(rows);
+      const clean = text.replace(/\[\[(remember|revisit):[\s\S]*?(\]\]|$)/gi, "").trimEnd();
+
+      let msgs: ChatMsg[], message: ChatMsg;
+      if (mode === "reshape") {
+        const old = history[reshapeIndex];
+        message = { ...old, content: clean, original: old.original ?? old.content, shape: body.style };
+        msgs = history.map((m, i) => (i === reshapeIndex ? message : m));
+      } else {
+        message = { role: "assistant", content: clean, ts: Date.now(), ...(saved.length ? { saved } : {}), ...(truncated ? { interrupted: true } : {}) };
+        msgs = [...base, { role: "user", content: prompt, ts: Date.now() }, message];
+      }
+      while (JSON.stringify(msgs).length > 220_000 && msgs.length > 2) msgs = msgs.slice(1);
+      const update: Record<string, unknown> = { messages: msgs, updated_at: new Date().toISOString() };
+      if (chat.title === "New chat" && mode === "chat") update.title = prompt.slice(0, 60);
+      if (mode === "reshape" && body.keep && MODIFIER_TEXT[body.style]) update.modifier = body.style;
+      await admin.from("chats").update(update).eq("id", chat.id);
+      await recordUsage(admin, user.id, mode, job.tier, inTok, outTok, true);
+      send({ t: "done", message, saved, title: update.title ?? chat.title });
+      ctrl.close();
+    },
   });
-  if (!r.ok) {
-    const detail = await r.text();
-    console.error("AI provider error", r.status, detail.slice(0, 500));
-    return json(502, { code: r.status === 429 ? "busy" : "provider_error", message: "The AI service had a problem. Try again in a moment." });
-  }
-  const out = await r.json();
-  const text = (out.content ?? []).filter((c: { type: string }) => c.type === "text").map((c: { text: string }) => c.text).join("");
-  const inTok = out.usage?.input_tokens ?? 0, outTok = out.usage?.output_tokens ?? 0;
-  const price = pricePerMTok(job.tier);
-  const cost = (inTok * price.input + outTok * price.output) / 1_000_000;
-  await admin.rpc("add_usage", { uid: user.id, field: job.counts ?? "none", amount: job.counts ? 1 : 0, in_tok: inTok, out_tok: outTok, cost });
-  return json(200, { text, model, tier: job.tier, demo: false, truncated: out.stop_reason === "max_tokens" });
+  return new Response(stream, { headers: { ...cors, "Content-Type": "application/x-ndjson", "Cache-Control": "no-cache" } });
 });
-
-function demoAnswer(job: string, question: string): string {
-  const q = question.length > 120 ? question.slice(0, 120) + "…" : question;
-  if (job === "chat" || job === "reshape") {
-    return `**Demo answer** (real AI isn't switched on yet)\n\nYou asked: _${q}_\n\nHere's how a real answer will look:\n\n**The big idea:** a short, plain-English explanation comes first.\n\n**Example:** then a small, concrete example.\n\n**The formula:** $E = mc^2$, with every symbol explained.\n\n**In simple terms:** a one-line summary to remember.`;
-  }
-  return `**Demo ${job.replace("_", " ")}** (real AI isn't switched on yet)\n\nThis is placeholder content so the screens can be tested end to end.`;
-}
