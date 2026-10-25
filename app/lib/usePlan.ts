@@ -13,6 +13,7 @@ export function usePlan() {
   const [courses, setCourses] = useState<Course[]>([]);
   const [deadlines, setDeadlines] = useState<Deadline[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
+  const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState('');
   const watching = useRef(false);
 
@@ -22,7 +23,7 @@ export function usePlan() {
       supabase.from('courses').select('*').order('created_at'),
       supabase.from('deadlines').select('*').order('due_at'),
     ]);
-    setPlan(p as PlanRow | null); setCourses((c ?? []) as Course[]); setDeadlines((d ?? []) as Deadline[]);
+    setPlan(p as PlanRow | null); setCourses((c ?? []) as Course[]); setDeadlines((d ?? []) as Deadline[]); setLoaded(true);
   }, []);
 
   const watch = useCallback(async (jobId: string, label: string) => {
@@ -65,5 +66,5 @@ export function usePlan() {
   }, [plan, autoUpdate]);
 
   const colourOf = (code: string) => { const i = courses.findIndex((c) => c.code === code); return courseColour(courses[i], Math.max(0, i)); };
-  return { plan, courses, deadlines, busy, error, change, toggleDone, removeInstruction, reload: load, colourOf, rebuild: () => rebuildPlan().then((id) => watch(id, 'Rebuilding your plan…')) };
+  return { loaded, plan, courses, deadlines, busy, error, change, toggleDone, removeInstruction, reload: load, colourOf, rebuild: () => rebuildPlan().then((id) => watch(id, 'Rebuilding your plan…')) };
 }

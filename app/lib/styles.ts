@@ -16,3 +16,13 @@ export const RESHAPE_OPTIONS = [
   { key: 'example', label: 'Give an example' },
   { key: 'quiz', label: 'Quiz me on this' },
 ];
+
+/** Icon and colour for each teaching style, used on the cards that pick one. */
+export const STYLE_LOOK: Record<string, { ios: string; material: string; color: string }> = {
+  simple: { ios: 'lightbulb.fill', material: 'lightbulb', color: '#C99A00' },
+  exam: { ios: 'target', material: 'track_changes', color: '#F0457E' },
+  maths: { ios: 'function', material: 'function', color: '#3442F5' },
+  lecture: { ios: 'graduationcap.fill', material: 'school', color: '#0F9F74' },
+  quick: { ios: 'bolt.fill', material: 'bolt', color: '#F07A12' },
+  custom: { ios: 'slider.horizontal.3', material: 'tune', color: '#8B4DF0' },
+};

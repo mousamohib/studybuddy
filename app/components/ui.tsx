@@ -1,70 +1,145 @@
-// Small shared building blocks so every screen looks the same.
-import type { ReactNode } from 'react';
+// Shared building blocks so every screen looks and feels the same.
+import { SymbolView } from 'expo-symbols';
+import * as Haptics from 'expo-haptics';
+import { useEffect, useState, type ReactNode } from 'react';
 import {
-  ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View,
-  type StyleProp, type TextInputProps, type TextStyle, type ViewStyle,
+  ActivityIndicator, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View,
+  type PressableProps, type StyleProp, type TextInputProps, type TextStyle, type ViewStyle,
 } from 'react-native';
-import { radius, space, type, useTheme } from '@/lib/theme';
+import Animated, { useAnimatedStyle, useSharedValue, withSpring, withTiming } from 'react-native-reanimated';
+import Svg, { Circle } from 'react-native-svg';
+import { font, radius, space, tint, type, useTheme } from '@/lib/theme';
 
-export function Screen({ children, scroll = true, style }: { children: ReactNode; scroll?: boolean; style?: StyleProp<ViewStyle> }) {
+export const haptic = {
+  tap: () => { if (Platform.OS !== 'web') Haptics.selectionAsync().catch(() => {}); },
+  success: () => { if (Platform.OS !== 'web') Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {}); },
+  warn: () => { if (Platform.OS !== 'web') Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning).catch(() => {}); },
+};
+
+/** Icon names per platform: SF Symbols on iPhone, Material Symbols on Android and web. */
+export type IconName = { ios: string; android: string; web: string };
+export const ic = (ios: string, material: string): IconName => ({ ios, android: material, web: material });
+export function Icon({ name, size = 20, color }: { name: IconName; size?: number; color?: string }) {
   const t = useTheme();
-  if (!scroll) return <View style={[{ flex: 1, backgroundColor: t.bg, padding: space.lg }, style]}>{children}</View>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return <SymbolView name={name as any} tintColor={color ?? t.text} size={size} />;
+}
+
+/** A pressable that gives a little squash when touched. */
+export function Pressy({ children, style, scaleTo = 0.97, onPress, haptics = true, ...rest }: PressableProps & { style?: StyleProp<ViewStyle>; scaleTo?: number; haptics?: boolean; children: ReactNode }) {
+  const s = useSharedValue(1);
+  const a = useAnimatedStyle(() => ({ transform: [{ scale: s.value }] }));
+  return (
+    <Pressable {...rest} onPress={(e) => { if (haptics) haptic.tap(); onPress?.(e); }}
+      onPressIn={(e) => { s.value = withSpring(scaleTo, { damping: 18, stiffness: 420 }); rest.onPressIn?.(e); }}
+      onPressOut={(e) => { s.value = withSpring(1, { damping: 14, stiffness: 300 }); rest.onPressOut?.(e); }}>
+      <Animated.View style={[style, a]}>{children}</Animated.View>
+    </Pressable>
+  );
+}
+
+export function Screen({ children, scroll = true, style, wide }: { children: ReactNode; scroll?: boolean; style?: StyleProp<ViewStyle>; wide?: boolean }) {
+  const t = useTheme();
+  const inner: ViewStyle = { width: '100%', maxWidth: wide ? 1000 : 760, alignSelf: 'center' };
+  if (!scroll) return <View style={[{ flex: 1, backgroundColor: t.bg, padding: space.lg }, inner, style]}>{children}</View>;
   return (
     <ScrollView style={{ flex: 1, backgroundColor: t.bg }} contentInsetAdjustmentBehavior="automatic"
-      contentContainerStyle={[{ padding: space.lg, gap: space.lg, paddingBottom: space.xxl }, style]}
+      contentContainerStyle={[{ padding: space.lg, gap: space.lg, paddingBottom: 120 }, inner, style]}
       keyboardShouldPersistTaps="handled">
       {children}
     </ScrollView>
   );
 }
 
-export function T({ children, variant = 'body', muted, style }: { children: ReactNode; variant?: keyof typeof type; muted?: boolean; style?: StyleProp<TextStyle> }) {
+const WEIGHT_FONT: Record<string, string> = { '400': font.body, normal: font.body, '500': font.medium, '600': font.semi, '700': font.bold, bold: font.bold, '800': font.bold, '900': font.bold };
+const HEADING_VARIANTS = new Set(['display', 'title', 'heading']);
+
+export function T({ children, variant = 'body', muted, color, style, numberOfLines }: {
+  children: ReactNode; variant?: keyof typeof type; muted?: boolean; color?: string; style?: StyleProp<TextStyle>; numberOfLines?: number;
+}) {
   const t = useTheme();
-  return <Text style={[type[variant], { color: muted ? t.muted : t.text }, style]}>{children}</Text>;
+  const flat = (StyleSheet.flatten(style) ?? {}) as TextStyle;
+  // Custom fonts need a family per weight, so a fontWeight on body text picks the matching Figtree file.
+  const fix: TextStyle = {};
+  if (flat.fontWeight && !HEADING_VARIANTS.has(variant) && !flat.fontFamily) { fix.fontFamily = WEIGHT_FONT[String(flat.fontWeight)] ?? font.semi; fix.fontWeight = 'normal'; }
+  return <Text numberOfLines={numberOfLines} style={[type[variant], { color: color ?? (muted ? t.muted : t.text) }, flat, fix]}>{children}</Text>;
 }
 
-export function Card({ children, style }: { children: ReactNode; style?: StyleProp<ViewStyle> }) {
+export function Card({ children, style, tint: tc, onPress, flat }: { children: ReactNode; style?: StyleProp<ViewStyle>; tint?: string; onPress?: () => void; flat?: boolean }) {
   const t = useTheme();
+  const base: ViewStyle = {
+    backgroundColor: tc ? tint(tc, t.dark ? 0.16 : 0.1) : flat ? t.surface : t.card,
+    borderColor: tc ? tint(tc, t.dark ? 0.35 : 0.25) : t.border, borderWidth: flat ? 0 : 1,
+    borderRadius: radius.lg, padding: space.lg, gap: space.sm,
+  };
+  if (onPress) return <Pressy onPress={onPress} style={[base, style]}>{children}</Pressy>;
+  return <View style={[base, style]}>{children}</View>;
+}
+
+export type ButtonKind = 'primary' | 'secondary' | 'soft' | 'danger' | 'ghost' | 'highlight';
+export function Button({ title, onPress, kind = 'primary', disabled, loading, style, icon, small, color }: {
+  title: string; onPress?: () => void; kind?: ButtonKind; disabled?: boolean; loading?: boolean; style?: StyleProp<ViewStyle>; icon?: IconName; small?: boolean; color?: string;
+}) {
+  const t = useTheme();
+  const main = color ?? t.accent;
+  const bg = { primary: main, secondary: 'transparent', soft: tint(main, t.dark ? 0.22 : 0.12), danger: t.danger, ghost: 'transparent', highlight: t.highlight }[kind];
+  const fg = { primary: color ? '#FFFFFF' : t.onAccent, secondary: main, soft: main, danger: '#FFFFFF', ghost: t.muted, highlight: t.onHighlight }[kind];
   return (
-    <View style={[{ backgroundColor: t.card, borderColor: t.border, borderWidth: StyleSheet.hairlineWidth, borderRadius: radius.lg, padding: space.lg, gap: space.sm }, style]}>
-      {children}
+    <Pressy accessibilityRole="button" onPress={onPress} disabled={disabled || loading}
+      style={[{
+        backgroundColor: bg, borderRadius: radius.md, minHeight: small ? 38 : 50, paddingHorizontal: small ? 14 : 20,
+        alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8,
+        borderWidth: kind === 'secondary' ? 1.5 : 0, borderColor: tint(main, 0.5), opacity: disabled ? 0.45 : 1,
+      }, style]}>
+      {loading ? <ActivityIndicator color={fg} /> : (
+        <>
+          {icon ? <Icon name={icon} size={small ? 17 : 19} color={fg} /> : null}
+          <Text style={{ color: fg, fontSize: small ? 14 : 16, fontFamily: font.bold }}>{title}</Text>
+        </>
+      )}
+    </Pressy>
+  );
+}
+
+export function Field(props: TextInputProps & { label?: string; hint?: string; error?: string }) {
+  const t = useTheme();
+  const [focused, setFocused] = useState(false);
+  const { label, hint, error, style, onFocus, onBlur, ...rest } = props;
+  return (
+    <View style={{ gap: 6 }}>
+      {label ? <T variant="label">{label}</T> : null}
+      <TextInput placeholderTextColor={tint(t.muted, 0.8)}
+        onFocus={(e) => { setFocused(true); onFocus?.(e); }} onBlur={(e) => { setFocused(false); onBlur?.(e); }}
+        style={[{
+          borderColor: error ? t.danger : focused ? t.accent : t.border, borderWidth: focused ? 2 : 1, borderRadius: radius.md,
+          paddingHorizontal: focused ? 13 : 14, paddingVertical: focused ? 12 : 13, color: t.text, backgroundColor: t.card,
+          fontSize: 16, fontFamily: font.body, ...(Platform.OS === 'web' ? { outlineStyle: 'none' } as object : {}),
+        }, style]}
+        {...rest} />
+      {error ? <T variant="small" color={t.danger}>{error}</T> : hint ? <T variant="small" muted>{hint}</T> : null}
     </View>
   );
 }
 
-export function Button({ title, onPress, kind = 'primary', disabled, loading, style }: {
-  title: string; onPress?: () => void; kind?: 'primary' | 'secondary' | 'danger' | 'ghost'; disabled?: boolean; loading?: boolean; style?: StyleProp<ViewStyle>;
-}) {
-  const t = useTheme();
-  const bg = kind === 'primary' ? t.accent : kind === 'danger' ? t.danger : 'transparent';
-  const fg = kind === 'primary' || kind === 'danger' ? t.onAccent : kind === 'ghost' ? t.muted : t.accent;
+/** Three tilted sticky notes in course colours. Used on empty screens. */
+export function Stickers({ size = 72 }: { size?: number }) {
+  const cols = ['#FFD43B', '#FF4F8B', '#3442F5'];
   return (
-    <Pressable accessibilityRole="button" onPress={onPress} disabled={disabled || loading}
-      style={({ pressed }) => [{
-        backgroundColor: bg, borderRadius: radius.md, paddingVertical: 11, paddingHorizontal: space.lg, alignItems: 'center',
-        borderWidth: kind === 'secondary' ? 1 : 0, borderColor: t.accent, opacity: disabled ? 0.5 : pressed ? 0.75 : 1,
-      }, style]}>
-      {loading ? <ActivityIndicator color={fg} /> : <Text style={{ color: fg, fontSize: 15, fontWeight: '600' }}>{title}</Text>}
-    </Pressable>
-  );
-}
-
-export function Field(props: TextInputProps & { label?: string }) {
-  const t = useTheme();
-  const { label, style, ...rest } = props;
-  return (
-    <View style={{ gap: space.xs }}>
-      {label ? <T variant="small" muted>{label}</T> : null}
-      <TextInput placeholderTextColor={t.muted}
-        style={[{ borderColor: t.border, borderWidth: 1, borderRadius: radius.md, paddingHorizontal: space.md, paddingVertical: 10, color: t.text, backgroundColor: t.surface, fontSize: 15 }, style]}
-        {...rest} />
+    <View style={{ width: size * 1.6, height: size * 1.1 }}>
+      {cols.map((c, i) => (
+        <View key={c} style={{
+          position: 'absolute', left: i * size * 0.3, top: i % 2 ? size * 0.12 : 0, width: size, height: size * 0.95, borderRadius: 10,
+          backgroundColor: c, transform: [{ rotate: `${[-10, 4, 12][i]}deg` }], opacity: 0.95,
+        }} />
+      ))}
     </View>
   );
 }
 
 export function Empty({ title, body, action }: { title: string; body: string; action?: ReactNode }) {
   return (
-    <Card style={{ alignItems: 'flex-start', gap: space.md }}>
+    <Card style={{ alignItems: 'flex-start', gap: space.md, paddingVertical: space.xl }}>
+      <Stickers size={44} />
       <T variant="heading">{title}</T>
       <T muted>{body}</T>
       {action}
@@ -72,44 +147,102 @@ export function Empty({ title, body, action }: { title: string; body: string; ac
   );
 }
 
-export function Meter({ label, used, limit }: { label: string; used: number; limit: number }) {
+function Bar({ value, color, height = 8 }: { value: number; color: string; height?: number }) {
+  const t = useTheme();
+  const w = useSharedValue(0);
+  useEffect(() => { w.value = withTiming(Math.max(0, Math.min(1, value)), { duration: 600 }); }, [value, w]);
+  const a = useAnimatedStyle(() => ({ width: `${w.value * 100}%` }));
+  return (
+    <View style={{ height, backgroundColor: t.surface, borderRadius: height / 2, overflow: 'hidden' }}>
+      <Animated.View style={[{ height: '100%', backgroundColor: color, borderRadius: height / 2 }, a]} />
+    </View>
+  );
+}
+
+export function Meter({ label, used, limit, color }: { label: string; used: number; limit: number; color?: string }) {
   const t = useTheme();
   const unlimited = limit >= 1000;
   const pct = unlimited ? 0 : Math.min(1, used / Math.max(1, limit));
   return (
     <View style={{ gap: 6 }}>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-        <T variant="small">{label}</T>
+        <T variant="label">{label}</T>
         <T variant="small" muted>{unlimited ? `${used} used` : `${used} of ${limit}`}</T>
       </View>
-      {!unlimited && (
-        <View style={{ height: 6, backgroundColor: t.surface, borderRadius: 3, overflow: 'hidden' }}>
-          <View style={{ width: `${pct * 100}%`, height: '100%', backgroundColor: pct >= 1 ? t.danger : t.accent }} />
-        </View>
-      )}
+      {!unlimited && <Bar value={pct} color={pct >= 1 ? t.danger : pct > 0.75 ? t.warn : color ?? t.accent} />}
     </View>
   );
 }
 
-export function Segments<K extends string>({ items, value, onChange }: { items: { key: K; label: string }[]; value: K; onChange: (k: K) => void }) {
+export function Progress({ value, color }: { value: number; color?: string }) {
+  const t = useTheme();
+  return <Bar value={value} color={color ?? t.accent} />;
+}
+
+/** A circular progress ring with something in the middle. */
+export function Ring({ value, size = 64, stroke = 8, color, children }: { value: number; size?: number; stroke?: number; color?: string; children?: ReactNode }) {
+  const t = useTheme();
+  const r = (size - stroke) / 2, c = 2 * Math.PI * r, v = Math.max(0, Math.min(1, value));
+  return (
+    <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
+      <Svg width={size} height={size} style={{ position: 'absolute', transform: [{ rotate: '-90deg' }] }}>
+        <Circle cx={size / 2} cy={size / 2} r={r} stroke={t.surface} strokeWidth={stroke} fill="none" />
+        <Circle cx={size / 2} cy={size / 2} r={r} stroke={color ?? t.accent} strokeWidth={stroke} fill="none"
+          strokeDasharray={`${c} ${c}`} strokeDashoffset={c * (1 - v)} strokeLinecap="round" />
+      </Svg>
+      {children}
+    </View>
+  );
+}
+
+/** Round tick box that pops when ticked. */
+export function Check({ checked, onPress, color, size = 26 }: { checked: boolean; onPress: () => void; color?: string; size?: number }) {
+  const t = useTheme();
+  const c = color ?? t.good;
+  const s = useSharedValue(1);
+  const a = useAnimatedStyle(() => ({ transform: [{ scale: s.value }] }));
+  return (
+    <Pressable hitSlop={10} accessibilityRole="checkbox" accessibilityState={{ checked }}
+      onPress={() => { s.value = withSpring(1.25, { damping: 6, stiffness: 500 }, () => { s.value = withSpring(1); }); if (!checked) haptic.success(); else haptic.tap(); onPress(); }}>
+      <Animated.View style={[{ width: size, height: size, borderRadius: size / 2, borderWidth: 2, borderColor: checked ? c : tint(t.muted, 0.6), backgroundColor: checked ? c : 'transparent', alignItems: 'center', justifyContent: 'center' }, a]}>
+        {checked ? <Icon name={ic('checkmark', 'check')} size={size * 0.62} color="#FFFFFF" /> : null}
+      </Animated.View>
+    </Pressable>
+  );
+}
+
+export function Segments<K extends string>({ items, value, onChange, color }: { items: { key: K; label: string; color?: string }[]; value: K; onChange: (k: K) => void; color?: string }) {
   const t = useTheme();
   return (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6 }}>
-      {items.map((it) => (
-        <Pressable key={it.key} onPress={() => onChange(it.key)} accessibilityRole="tab" accessibilityState={{ selected: value === it.key }}
-          style={{ paddingVertical: 7, paddingHorizontal: 12, borderRadius: 999, backgroundColor: value === it.key ? t.text : t.surface }}>
-          <Text style={{ color: value === it.key ? t.bg : t.text, fontSize: 13, fontWeight: '600' }}>{it.label}</Text>
-        </Pressable>
-      ))}
+    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingVertical: 2 }}>
+      {items.map((it) => {
+        const on = value === it.key, c = it.color ?? color ?? t.accent;
+        return (
+          <Pressy key={it.key} onPress={() => onChange(it.key)} accessibilityRole="tab" accessibilityState={{ selected: on }}
+            style={{ paddingVertical: 9, paddingHorizontal: 15, borderRadius: radius.pill, backgroundColor: on ? c : t.card, borderWidth: 1, borderColor: on ? c : t.border }}>
+            <Text style={{ color: on ? '#FFFFFF' : t.text, fontSize: 14, fontFamily: font.semi }}>{it.label}</Text>
+          </Pressy>
+        );
+      })}
     </ScrollView>
   );
 }
 
 export function Pill({ label, color }: { label: string; color?: string }) {
   const t = useTheme();
+  const c = color ?? t.muted;
   return (
-    <View style={{ alignSelf: 'flex-start', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 999, backgroundColor: t.surface }}>
-      <Text style={{ fontSize: 11, fontWeight: '600', color: color ?? t.muted, letterSpacing: 0.3 }}>{label}</Text>
+    <View style={{ alignSelf: 'flex-start', paddingHorizontal: 9, paddingVertical: 3, borderRadius: radius.pill, backgroundColor: tint(c, t.dark ? 0.2 : 0.12) }}>
+      <Text style={{ fontSize: 12, fontFamily: font.semi, color: c }}>{label}</Text>
+    </View>
+  );
+}
+
+/** Course code badge: a small coloured block with the code in it. */
+export function CourseTag({ code, color, big }: { code: string; color: string; big?: boolean }) {
+  return (
+    <View style={{ alignSelf: 'flex-start', backgroundColor: color, borderRadius: big ? 10 : 7, paddingHorizontal: big ? 10 : 7, paddingVertical: big ? 5 : 2 }}>
+      <Text style={{ color: '#FFFFFF', fontFamily: font.heading, fontSize: big ? 15 : 12, letterSpacing: 0.2 }}>{code}</Text>
     </View>
   );
 }
@@ -121,17 +254,32 @@ export function Row({ children, style }: { children: ReactNode; style?: StylePro
 export function LinkText({ title, onPress, color }: { title: string; onPress: () => void; color?: string }) {
   const t = useTheme();
   return (
-    <Pressable onPress={onPress} hitSlop={8} accessibilityRole="button">
-      <Text style={{ color: color ?? t.accent, fontSize: 14, fontWeight: '600' }}>{title}</Text>
+    <Pressable onPress={() => { haptic.tap(); onPress(); }} hitSlop={8} accessibilityRole="button" style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}>
+      <Text style={{ color: color ?? t.accent, fontSize: 15, fontFamily: font.semi }}>{title}</Text>
     </Pressable>
   );
 }
 
-export function Progress({ value }: { value: number }) {
+/** Heading for a part of a screen, with an optional action on the right. */
+export function Section({ title, action, children, gap = space.sm }: { title: string; action?: ReactNode; children?: ReactNode; gap?: number }) {
+  return (
+    <View style={{ gap }}>
+      <Row style={{ justifyContent: 'space-between', flexWrap: 'nowrap' }}>
+        <T variant="heading">{title}</T>
+        {action}
+      </Row>
+      {children}
+    </View>
+  );
+}
+
+/** Small round icon button. */
+export function IconButton({ icon, onPress, color, bg, label, size = 40 }: { icon: IconName; onPress: () => void; color?: string; bg?: string; label: string; size?: number }) {
   const t = useTheme();
   return (
-    <View style={{ height: 6, backgroundColor: t.surface, borderRadius: 3, overflow: 'hidden' }}>
-      <View style={{ width: `${Math.max(0, Math.min(1, value)) * 100}%`, height: '100%', backgroundColor: t.accent }} />
-    </View>
+    <Pressy onPress={onPress} accessibilityRole="button" accessibilityLabel={label}
+      style={{ width: size, height: size, borderRadius: size / 2, alignItems: 'center', justifyContent: 'center', backgroundColor: bg ?? t.card, borderWidth: bg ? 0 : 1, borderColor: t.border }}>
+      <Icon name={icon} size={size * 0.5} color={color ?? t.text} />
+    </Pressy>
   );
 }

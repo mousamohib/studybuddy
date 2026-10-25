@@ -1,33 +1,56 @@
-import { SymbolView } from 'expo-symbols';
 import { Tabs } from 'expo-router';
-import type { ColorValue } from 'react-native';
-import { useClientOnlyValue } from '@/components/useClientOnlyValue';
-import { useTheme } from '@/lib/theme';
+import type { ComponentProps } from 'react';
+import { Platform, Text, View } from 'react-native';
+import Animated, { LinearTransition } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Icon, Pressy, ic, type IconName } from '@/components/ui';
+import { font, tint, useTheme } from '@/lib/theme';
 
-type IconName = { ios: string; android: string; web: string };
-const icon = (name: IconName) => ({ color }: { color: ColorValue }) => (
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  <SymbolView name={name as any} tintColor={color as string} size={24} />
-);
+type BottomTabBarProps = Parameters<NonNullable<ComponentProps<typeof Tabs>['tabBar']>>[0];
+
+const TABS: Record<string, { title: string; icon: IconName }> = {
+  index: { title: 'Today', icon: ic('sun.max.fill', 'wb_sunny') },
+  calendar: { title: 'Calendar', icon: ic('calendar', 'calendar_month') },
+  courses: { title: 'Courses', icon: ic('books.vertical.fill', 'menu_book') },
+  chat: { title: 'Tutor', icon: ic('bubble.left.and.bubble.right.fill', 'forum') },
+  profile: { title: 'You', icon: ic('person.crop.circle.fill', 'account_circle') },
+};
+
+// A floating bar: the open tab grows into an ink-blue pill with its name.
+function TabBar({ state, navigation }: BottomTabBarProps) {
+  const t = useTheme();
+  const insets = useSafeAreaInsets();
+  return (
+    <View pointerEvents="box-none" style={{ position: 'absolute', left: 0, right: 0, bottom: Math.max(insets.bottom, 12), alignItems: 'center' }}>
+      <View style={{
+        flexDirection: 'row', gap: 4, padding: 6, borderRadius: 999, backgroundColor: t.card, borderWidth: 1, borderColor: t.border,
+        ...(Platform.OS === 'web' ? { boxShadow: `0 10px 30px ${tint('#181A36', t.dark ? 0.5 : 0.14)}` } as object
+          : { shadowColor: '#181A36', shadowOpacity: t.dark ? 0.5 : 0.14, shadowRadius: 18, shadowOffset: { width: 0, height: 8 }, elevation: 10 }),
+      }}>
+        {state.routes.map((r, i) => {
+          const tab = TABS[r.name]; if (!tab) return null;
+          const on = state.index === i;
+          return (
+            <Pressy key={r.key} accessibilityRole="tab" accessibilityState={{ selected: on }} accessibilityLabel={tab.title}
+              onPress={() => { const e = navigation.emit({ type: 'tabPress', target: r.key, canPreventDefault: true }); if (!on && !e.defaultPrevented) navigation.navigate(r.name); }}>
+              <Animated.View layout={LinearTransition.springify().damping(18)}
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 6, height: 46, paddingHorizontal: on ? 16 : 13, borderRadius: 999, backgroundColor: on ? t.accent : 'transparent' }}>
+                <Icon name={tab.icon} size={22} color={on ? t.onAccent : t.muted} />
+                {on && <Text style={{ color: t.onAccent, fontFamily: font.bold, fontSize: 14 }}>{tab.title}</Text>}
+              </Animated.View>
+            </Pressy>
+          );
+        })}
+      </View>
+    </View>
+  );
+}
 
 export default function TabLayout() {
   const t = useTheme();
   return (
-    <Tabs
-      screenOptions={{
-        tabBarActiveTintColor: t.accent,
-        tabBarInactiveTintColor: t.muted,
-        tabBarStyle: { backgroundColor: t.bg, borderTopColor: t.border },
-        headerStyle: { backgroundColor: t.bg },
-        headerTitleStyle: { color: t.text },
-        headerShadowVisible: false,
-        headerShown: useClientOnlyValue(false, true),
-      }}>
-      <Tabs.Screen name="index" options={{ title: 'Today', tabBarIcon: icon({ ios: 'sun.max', android: 'today', web: 'today' }) }} />
-      <Tabs.Screen name="calendar" options={{ title: 'Calendar', tabBarIcon: icon({ ios: 'calendar', android: 'calendar_month', web: 'calendar_month' }) }} />
-      <Tabs.Screen name="courses" options={{ title: 'Courses', tabBarIcon: icon({ ios: 'books.vertical', android: 'menu_book', web: 'menu_book' }) }} />
-      <Tabs.Screen name="chat" options={{ title: 'Chat', tabBarIcon: icon({ ios: 'bubble.left.and.bubble.right', android: 'forum', web: 'forum' }) }} />
-      <Tabs.Screen name="profile" options={{ title: 'Profile', tabBarIcon: icon({ ios: 'person.crop.circle', android: 'account_circle', web: 'account_circle' }) }} />
+    <Tabs tabBar={(p) => <TabBar {...p} />} screenOptions={{ headerShown: false, sceneStyle: { backgroundColor: t.bg } }}>
+      {Object.entries(TABS).map(([name, v]) => <Tabs.Screen key={name} name={name} options={{ title: v.title }} />)}
     </Tabs>
   );
 }

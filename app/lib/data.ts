@@ -18,8 +18,13 @@ export const isAssignment = (d: Pick<Deadline, 'kind'>) => ASSIGNMENT_KINDS.incl
 export const KIND_LABEL: Record<DeadlineKind, string> = { assignment: 'Assignment', quiz: 'Quiz', midterm: 'Midterm', final: 'Final exam', test: 'Test', lab: 'Lab', project: 'Project', other: 'Other' };
 export const MODE_LABEL: Record<ChatMode, string> = { ask: 'Ask', lesson: 'Teach me', practice: 'Practice', coding: 'Coding', assignment: 'Assignment' };
 
-export const COURSE_COLOURS = ['#E16259', '#0F7B6C', '#D9730D', '#6940A5', '#2383E2', '#AD1A72', '#64473A', '#337EA9'];
-export const courseColour = (c: Pick<Course, 'colour' | 'created_at'> | undefined, i = 0) => c?.colour || COURSE_COLOURS[i % COURSE_COLOURS.length];
+// Highlighter colours. Each is dark enough for white text on top.
+export const COURSE_COLOURS = ['#3442F5', '#F0457E', '#0F9F74', '#F07A12', '#8B4DF0', '#0B93D6', '#C99A00', '#E5385F'];
+const OLD_COLOURS = ['#E16259', '#0F7B6C', '#D9730D', '#6940A5', '#2383E2', '#AD1A72', '#64473A', '#337EA9'];
+export const courseColour = (c: Pick<Course, 'colour' | 'created_at'> | undefined, i = 0) => {
+  const old = c?.colour ? OLD_COLOURS.indexOf(c.colour.toUpperCase()) : -1;
+  return old >= 0 ? COURSE_COLOURS[old] : c?.colour || COURSE_COLOURS[i % COURSE_COLOURS.length];
+};
 
 export const localISO = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 export const daysUntil = (iso: string) => { const a = new Date(); a.setHours(0, 0, 0, 0); const b = new Date(iso); b.setHours(0, 0, 0, 0); return Math.round((b.getTime() - a.getTime()) / 86400000); };

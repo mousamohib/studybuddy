@@ -1,4 +1,11 @@
 import { useFonts } from 'expo-font';
+import { BricolageGrotesque_600SemiBold } from '@expo-google-fonts/bricolage-grotesque/600SemiBold';
+import { BricolageGrotesque_700Bold } from '@expo-google-fonts/bricolage-grotesque/700Bold';
+import { BricolageGrotesque_800ExtraBold } from '@expo-google-fonts/bricolage-grotesque/800ExtraBold';
+import { Figtree_400Regular } from '@expo-google-fonts/figtree/400Regular';
+import { Figtree_500Medium } from '@expo-google-fonts/figtree/500Medium';
+import { Figtree_600SemiBold } from '@expo-google-fonts/figtree/600SemiBold';
+import { Figtree_700Bold } from '@expo-google-fonts/figtree/700Bold';
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
@@ -10,14 +17,17 @@ import { MenuProvider } from '@/components/Menu';
 import { useColorScheme } from '@/components/useColorScheme';
 import { AuthProvider, useAccount } from '@/lib/auth';
 import { refreshPhoneSchedule } from '@/lib/reminders';
-import { themes } from '@/lib/theme';
+import { font, themes } from '@/lib/theme';
 
 export { ErrorBoundary } from 'expo-router';
 
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
-  const [loaded, error] = useFonts({ SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf') });
+  const [loaded, error] = useFonts({
+    BricolageGrotesque_600SemiBold, BricolageGrotesque_700Bold, BricolageGrotesque_800ExtraBold,
+    Figtree_400Regular, Figtree_500Medium, Figtree_600SemiBold, Figtree_700Bold,
+  });
   useEffect(() => { if (error) throw error; }, [error]);
   if (!loaded) return null;
   return (
@@ -50,7 +60,7 @@ function RootNav() {
     <ThemeProvider value={navTheme}>
       <MenuProvider>
         <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
-        <Stack screenOptions={{ headerShadowVisible: false, headerBackTitle: 'Back' }}>
+        <Stack screenOptions={{ headerShadowVisible: false, headerBackTitle: 'Back', headerTitleStyle: { fontFamily: font.heading, fontSize: 18 }, headerTintColor: c.text, contentStyle: { backgroundColor: c.bg } }}>
           <Stack.Protected guard={!!session && !!onboarded}>
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
             <Stack.Screen name="course/new" options={{ title: 'Add a course' }} />

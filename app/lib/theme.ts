@@ -1,47 +1,77 @@
-// Calm, Notion-like palette. Every screen takes colours from here so light and dark both work.
+// StudyBuddy look: a student's desk. Ink-blue pen for actions, highlighter colours for courses,
+// Bricolage Grotesque for headings, Figtree for reading. Every screen takes colours from here.
 import { useColorScheme } from '@/components/useColorScheme';
 
 const light = {
-  bg: '#FFFFFF',
-  surface: '#F7F7F5',
+  bg: '#F3F4FA',
+  surface: '#E9EBF6',     // sunken areas: inputs, tracks, chips
   card: '#FFFFFF',
-  text: '#37352F',
-  muted: '#787774',
-  border: '#E9E9E7',
-  accent: '#2383E2',
+  text: '#181A36',
+  muted: '#676B90',
+  border: '#DFE2F0',
+  accent: '#3442F5',      // ink blue
+  accentSoft: '#E4E6FF',
   onAccent: '#FFFFFF',
-  danger: '#E03E3E',
-  good: '#0F7B6C',
-  warn: '#D9730D',
+  highlight: '#FFD43B',   // highlighter yellow
+  onHighlight: '#2B2300',
+  danger: '#E5385F',
+  good: '#12A57A',
+  warn: '#E8890C',
+  overlay: 'rgba(18,20,48,0.45)',
 };
 
 const dark: typeof light = {
-  bg: '#191919',
-  surface: '#202020',
-  card: '#252525',
-  text: '#E6E6E4',
-  muted: '#9B9A97',
-  border: '#2F2F2F',
-  accent: '#529CCA',
-  onAccent: '#FFFFFF',
-  danger: '#FF7369',
-  good: '#4DAB9A',
-  warn: '#FFA344',
+  bg: '#0F1124',
+  surface: '#1B1E3B',
+  card: '#171A34',
+  text: '#EEF0FF',
+  muted: '#9A9EC6',
+  border: '#2A2E55',
+  accent: '#7D88FF',
+  accentSoft: '#252A5C',
+  onAccent: '#0F1124',
+  highlight: '#FFD43B',
+  onHighlight: '#2B2300',
+  danger: '#FF6B8B',
+  good: '#3AD6A3',
+  warn: '#FFB04A',
+  overlay: 'rgba(0,0,0,0.6)',
 };
 
-export type Theme = typeof light;
+export type Theme = typeof light & { dark: boolean };
 export const themes = { light, dark };
 
 export function useTheme(): Theme {
-  return useColorScheme() === 'dark' ? dark : light;
+  const d = useColorScheme() === 'dark';
+  return { ...(d ? dark : light), dark: d };
 }
 
-export const space = { xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 32 };
-export const radius = { sm: 6, md: 8, lg: 12 };
+/** hex colour + opacity (0-1) → #RRGGBBAA */
+export const tint = (hex: string, a: number) => {
+  const h = hex.replace('#', '');
+  const full = h.length === 3 ? h.split('').map((c) => c + c).join('') : h.slice(0, 6);
+  return `#${full}${Math.round(Math.max(0, Math.min(1, a)) * 255).toString(16).padStart(2, '0')}`;
+};
+
+export const font = {
+  display: 'BricolageGrotesque_800ExtraBold',
+  heading: 'BricolageGrotesque_700Bold',
+  headingSemi: 'BricolageGrotesque_600SemiBold',
+  body: 'Figtree_400Regular',
+  medium: 'Figtree_500Medium',
+  semi: 'Figtree_600SemiBold',
+  bold: 'Figtree_700Bold',
+};
+
+export const space = { xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 36 };
+export const radius = { sm: 8, md: 12, lg: 18, xl: 26, pill: 999 };
 export const type = {
-  title: { fontSize: 28, fontWeight: '700' as const, letterSpacing: -0.3 },
-  heading: { fontSize: 18, fontWeight: '600' as const },
-  body: { fontSize: 15, lineHeight: 22 },
-  small: { fontSize: 13, lineHeight: 18 },
-  label: { fontSize: 12, fontWeight: '600' as const, letterSpacing: 0.6, textTransform: 'uppercase' as const },
+  display: { fontFamily: font.display, fontSize: 36, lineHeight: 40, letterSpacing: -1 },
+  title: { fontFamily: font.display, fontSize: 28, lineHeight: 33, letterSpacing: -0.6 },
+  heading: { fontFamily: font.heading, fontSize: 19, lineHeight: 24, letterSpacing: -0.2 },
+  body: { fontFamily: font.body, fontSize: 16, lineHeight: 23 },
+  strong: { fontFamily: font.semi, fontSize: 16, lineHeight: 22 },
+  small: { fontFamily: font.body, fontSize: 13.5, lineHeight: 19 },
+  label: { fontFamily: font.semi, fontSize: 13.5, lineHeight: 18 },
+  tiny: { fontFamily: font.semi, fontSize: 11.5, lineHeight: 14 },
 };
