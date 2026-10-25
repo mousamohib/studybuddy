@@ -1,7 +1,7 @@
 import { router } from 'expo-router';
 import { useState, type ReactNode } from 'react';
-import { ActivityIndicator, ScrollView, Text, View } from 'react-native';
-import { Button, Card, CourseTag, Empty, Field, Icon, IconButton, ic, ListRow, Pressy, Ring, Row, Screen, Section, T, LinkText } from '@/components/ui';
+import { ActivityIndicator, ScrollView, Text, View, Platform } from 'react-native';
+import { Button, Card, CourseTag, Empty, Field, Icon, IconButton, ic, ListRow, Pressy, Ring, Row, Screen, Section, T, LinkText , useSlab } from '@/components/ui';
 import { PlanSession, type FullSession } from '@/components/PlanSession';
 import { Rich } from '@/components/Rich';
 import { Confetti } from '@/components/Confetti';
@@ -43,6 +43,7 @@ export default function Today() {
   const name = (session?.user.user_metadata?.display_name as string | undefined)?.split(' ')[0];
   const codeOf = (id: string) => p.courses.find((c) => c.id === id)?.code ?? '';
   const wide = useWide();
+  const slab = useSlab();
   const [burst, setBurst] = useState({ n: 0, big: false });
   const nextUp = sessions.find((s) => !p.plan?.done[s.id]) as FullSession | undefined;
 
@@ -105,7 +106,7 @@ export default function Today() {
   );
 
   const startBtn = nextUp ? (
-    <Pressy onPress={startNext} style={{ flexDirection: 'row', alignItems: 'center', gap: space.md, backgroundColor: t.text, borderRadius: radius.xl, padding: space.lg, paddingRight: space.xl }}>
+    <Pressy onPress={startNext} style={[{ flexDirection: 'row', alignItems: 'center', gap: space.md, backgroundColor: t.text, borderRadius: radius.xl, padding: space.lg, paddingRight: space.xl }, slab, Platform.OS === 'web' ? { boxShadow: `7px 7px 0 ${t.accent}` } as object : null]}>
       <View style={{ width: 54, height: 54, borderRadius: 27, backgroundColor: p.colourOf(nextUp.course), alignItems: 'center', justifyContent: 'center' }}>
         <Icon name={ic('play.fill', 'play_arrow')} size={28} color="#FFFFFF" />
       </View>
@@ -131,9 +132,9 @@ export default function Today() {
         const code = codeOf(first.course_id), col = p.colourOf(code), n = daysUntil(first.due_at);
         return (
           <Pressy onPress={() => router.push({ pathname: '/course/[id]', params: { id: first.course_id, section: 'deadlines' } })}
-            style={{ backgroundColor: col, borderRadius: radius.xl, padding: space.xl, gap: space.md, overflow: 'hidden' }}>
-            <View style={{ position: 'absolute', right: -40, top: -40, width: 180, height: 180, borderRadius: 90, backgroundColor: 'rgba(255,255,255,0.12)' }} />
-            <View style={{ position: 'absolute', right: 40, bottom: -70, width: 140, height: 140, borderRadius: 70, backgroundColor: 'rgba(255,255,255,0.08)' }} />
+            style={[{ backgroundColor: col, borderRadius: radius.xl, padding: space.xl, gap: space.md, overflow: 'hidden' }, slab]}>
+            {Platform.OS !== 'web' && <View style={{ position: 'absolute', right: -40, top: -40, width: 180, height: 180, borderRadius: 90, backgroundColor: 'rgba(255,255,255,0.12)' }} />}
+            {Platform.OS !== 'web' && <View style={{ position: 'absolute', right: 40, bottom: -70, width: 140, height: 140, borderRadius: 70, backgroundColor: 'rgba(255,255,255,0.08)' }} />}
             <Row style={{ justifyContent: 'space-between' }}>
               <View style={{ backgroundColor: 'rgba(255,255,255,0.22)', borderRadius: 8, paddingHorizontal: 9, paddingVertical: 3 }}>
                 <Text style={{ color: '#fff', fontFamily: font.heading, fontSize: 13 }}>{code}</Text>

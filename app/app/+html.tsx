@@ -28,7 +28,9 @@ export default function Root({ children }: { children: ReactNode }) {
   );
 }
 
+// The website uses square corners everywhere (the phone app keeps its rounded ones).
 const responsiveBackground = `
+#root * { border-radius: 0 !important; }
 body {
   background-color: #FFFFFF;
 }

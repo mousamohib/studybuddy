@@ -107,6 +107,8 @@ export function Button({ title, onPress, kind = 'primary', disabled, loading, st
         backgroundColor: bg, borderRadius: radius.md, minHeight: small ? 38 : 50, paddingHorizontal: small ? 14 : 20,
         alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8,
         borderWidth: kind === 'secondary' ? 1.5 : 0, borderColor: tint(main, 0.5), opacity: disabled ? 0.45 : 1,
+        // Website: ink slab with a hard shadow, like the front page.
+        ...(Platform.OS === 'web' && kind !== 'ghost' && kind !== 'soft' ? { borderWidth: 2, borderColor: t.text, boxShadow: `4px 4px 0 ${t.text}`, marginRight: 4, marginBottom: 4 } as object : {}),
       }, style]}>
       {loading ? <ActivityIndicator color={fg} /> : (
         <>
@@ -316,4 +318,10 @@ export function IconButton({ icon, onPress, color, bg, label, size = 40 }: { ico
       <Icon name={icon} size={size * 0.5} color={color ?? t.text} />
     </Pressy>
   );
+}
+
+/** On the website, coloured blocks get an ink outline and a hard shadow (like the front page). */
+export function useSlab(): ViewStyle {
+  const t = useTheme();
+  return Platform.OS === 'web' ? ({ borderWidth: 2.5, borderColor: t.text, boxShadow: `7px 7px 0 ${t.text}`, marginRight: 7, marginBottom: 7 } as ViewStyle) : {};
 }

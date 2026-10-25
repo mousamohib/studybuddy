@@ -98,7 +98,7 @@ export default function Profile() {
       ))}
 
       <View style={{ backgroundColor: t.accent, borderRadius: radius.xl, padding: space.xl, gap: space.md, overflow: 'hidden' }}>
-        <View style={{ position: 'absolute', right: -40, top: -50, width: 170, height: 170, borderRadius: 85, backgroundColor: 'rgba(255,255,255,0.1)' }} />
+        {Platform.OS !== 'web' && <View style={{ position: 'absolute', right: -40, top: -50, width: 170, height: 170, borderRadius: 85, backgroundColor: 'rgba(255,255,255,0.1)' }} />}
         <Row style={{ justifyContent: 'space-between', flexWrap: 'nowrap' }}>
           <View>
             <Text style={{ color: t.onAccent, fontFamily: font.display, fontSize: 28 }}>{plan === 'pro' ? (trialEndsAt ? 'Pro trial' : 'Pro') : 'Free'}</Text>

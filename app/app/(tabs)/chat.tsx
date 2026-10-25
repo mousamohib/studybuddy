@@ -58,7 +58,7 @@ export default function ChatTab() {
       </View>
 
       <View style={{ backgroundColor: accent, borderRadius: radius.xl, padding: space.lg, gap: space.md, overflow: 'hidden' }}>
-        <View style={{ position: 'absolute', right: -30, top: -40, width: 140, height: 140, borderRadius: 70, backgroundColor: 'rgba(255,255,255,0.12)' }} />
+        {Platform.OS !== 'web' && <View style={{ position: 'absolute', right: -30, top: -40, width: 140, height: 140, borderRadius: 70, backgroundColor: 'rgba(255,255,255,0.12)' }} />}
         <Text style={{ color: '#fff', fontFamily: font.heading, fontSize: 22 }}>{sel ? `Stuck on something in ${sel.code}?` : 'What are you stuck on?'}</Text>
         <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 6, backgroundColor: t.bg, borderRadius: 22, padding: 5 }}>
           <TextInput value={q} onChangeText={setQ} placeholder={sel ? `Ask about ${sel.code}…` : 'Ask anything…'} placeholderTextColor={t.muted} multiline onSubmitEditing={ask}

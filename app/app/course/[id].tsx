@@ -1,7 +1,7 @@
 import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Text, View } from 'react-native';
-import { AccentProvider, Button, ic, Row, Screen, Segments, T } from '@/components/ui';
+import { ActivityIndicator, Text, View, Platform } from 'react-native';
+import { AccentProvider, Button, ic, Row, Screen, Segments, T , useSlab } from '@/components/ui';
 import { Chats } from '@/components/course/Chats';
 import { Deadlines } from '@/components/course/Deadlines';
 import { Materials } from '@/components/course/Materials';
@@ -37,6 +37,7 @@ export default function CourseHub() {
   const [tab, setTab] = useState<Section>(section && SECTIONS.some((s) => s.key === section) ? section : 'materials');
   const [col, setCol] = useState<string | null>(null);
   const wide = useWide();
+  const slab = useSlab();
 
   // The course's colour depends on its place in the list, so look that up once.
   useEffect(() => {
@@ -57,8 +58,8 @@ export default function CourseHub() {
   return (
     <Screen>
       <Stack.Screen options={wide ? { title: c.code, headerStyle: { backgroundColor: t.bg }, headerTintColor: t.text } : { title: '', headerStyle: { backgroundColor: colour }, headerTintColor: '#FFFFFF' }} />
-      <View style={[{ backgroundColor: colour, gap: space.lg, overflow: 'hidden' }, wide ? { borderRadius: radius.xl, padding: space.xl } : { marginHorizontal: -space.lg, marginTop: -space.lg, paddingHorizontal: space.lg, paddingBottom: space.xl, paddingTop: space.sm, borderBottomLeftRadius: radius.xl, borderBottomRightRadius: radius.xl }]}>
-        <View style={{ position: 'absolute', right: -50, top: -60, width: 200, height: 200, borderRadius: 100, backgroundColor: 'rgba(255,255,255,0.1)' }} />
+      <View style={[{ backgroundColor: colour, gap: space.lg, overflow: 'hidden' }, wide ? { borderRadius: radius.xl, padding: space.xl, ...slab } : { marginHorizontal: -space.lg, marginTop: -space.lg, paddingHorizontal: space.lg, paddingBottom: space.xl, paddingTop: space.sm, borderBottomLeftRadius: radius.xl, borderBottomRightRadius: radius.xl }]}>
+        {Platform.OS !== 'web' && <View style={{ position: 'absolute', right: -50, top: -60, width: 200, height: 200, borderRadius: 100, backgroundColor: 'rgba(255,255,255,0.1)' }} />}
         <View style={{ gap: 4 }}>
           <Text style={{ color: '#fff', fontFamily: font.display, fontSize: 38, lineHeight: 42, letterSpacing: -1.2 }}>{c.code}</Text>
           {c.name ? <Text style={{ color: 'rgba(255,255,255,0.9)', fontFamily: font.medium, fontSize: 16 }}>{c.name}</Text> : null}
