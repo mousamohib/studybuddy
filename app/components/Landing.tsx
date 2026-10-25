@@ -514,8 +514,8 @@ mark { background: linear-gradient(100deg, transparent 2%, rgba(255,222,60,.9) 4
 @media (prefers-color-scheme: dark) { mark { background-image: linear-gradient(100deg, transparent 2%, rgba(255,222,60,.45) 4%, rgba(255,222,60,.4) 96%, transparent 98%); } }
 
 /* ---------- desks: the surface everything sits on ---------- */
-.lp.desk-mat, .lp.desk-navy, .lp.desk-blue { --ink: #F4F5FF; --muted: rgba(244,245,255,.72); --pen: #FFE45E; --red: #FF7AA8; --card: #FFFFFF; --soft: rgba(255,255,255,.1); }
-.lp.desk-mat { --paper: #1F4F46; --ex1: #173d36; --ex2: #12322c; --ex3: #0d2722; background: radial-gradient(ellipse at 30% 0%, #2a6a5d, #1F4F46 55%, #173d36); }
+.lp.desk-mat, .lp.desk-navy, .lp.desk-blue { --ink: #F7F8FF; --muted: rgba(244,245,255,.82); --pen: #FFE45E; --red: #FF7AA8; --card: #FFFFFF; --soft: rgba(255,255,255,.1); }
+.lp.desk-mat { --paper: #143630; --ex1: #0e2823; --ex2: #0a211c; --ex3: #071915; background: radial-gradient(ellipse at 30% 0%, #1d4a41, #143630 55%, #0e2823); }
 .lp.desk-navy { --paper: #151936; --ex1: #0f1229; --ex2: #0b0e21; --ex3: #080a19; background: radial-gradient(ellipse at 30% 0%, #222868, #151936 55%, #0f1229); }
 .lp.desk-blue { --paper: #2C38D6; --ex1: #2230b4; --ex2: #1c2899; --ex3: #16207c; background: radial-gradient(ellipse at 30% 0%, #4b56f0, #2C38D6 55%, #2230b4); }
 .lp:not(.desk-paper) .holes { display: none; }
@@ -537,7 +537,7 @@ mark { background: linear-gradient(100deg, transparent 2%, rgba(255,222,60,.9) 4
 .lp:not(.desk-paper) .link { color: rgba(244,245,255,.75); }
 .lp:not(.desk-paper) .link:hover { color: #fff; }
 .lp:not(.desk-paper) .scribble svg path { stroke: #FFE45E; }
-.lp:not(.desk-paper) .mood { filter: brightness(1.9) saturate(.8); }
+.lp:not(.desk-paper) .mood { color: var(--pen) !important; }
 .lp:not(.desk-paper) .syllabus.used { opacity: .55; }
 
 /* ---------- depth ---------- */

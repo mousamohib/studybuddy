@@ -84,7 +84,7 @@ export function Screen({ children, scroll = true, style, wide }: { children: Rea
 
 /** Website: ruled notebook paper with a red margin line. */
 export const paperBg = (_t: { dark: boolean; bg: string }): ViewStyle => (Platform.OS !== 'web' ? {} : ({
-  backgroundImage: 'linear-gradient(rgba(255,255,255,0.15) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.15) 1px, transparent 1px), linear-gradient(rgba(255,255,255,0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.06) 1px, transparent 1px), radial-gradient(ellipse at 30% 0%, #2a6a5d, #1F4F46 55%, #173d36)',
+  backgroundImage: 'linear-gradient(rgba(255,255,255,0.15) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.15) 1px, transparent 1px), linear-gradient(rgba(255,255,255,0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.06) 1px, transparent 1px), radial-gradient(ellipse at 30% 0%, #1d4a41, #143630 55%, #0e2823)',
   backgroundSize: '170px 170px, 170px 170px, 34px 34px, 34px 34px, 100% 100%',
   backgroundAttachment: 'local',
 } as ViewStyle));

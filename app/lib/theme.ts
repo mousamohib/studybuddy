@@ -41,12 +41,12 @@ const dark: typeof light = {
 
 // Website: the green cutting-mat desk from the front page. Paper things (sticky notes, cards) sit on top.
 const mat: typeof light = {
-  bg: '#1F4F46',
-  surface: 'rgba(255,255,255,0.09)',
-  card: '#1F4F46',
+  bg: '#143630',
+  surface: 'rgba(255,255,255,0.1)',
+  card: '#143630',
   text: '#F4F5FF',
-  muted: 'rgba(244,245,255,0.7)',
-  border: 'rgba(255,255,255,0.14)',
+  muted: 'rgba(244,245,255,0.8)',
+  border: 'rgba(255,255,255,0.16)',
   accent: '#FFE45E',
   accentSoft: 'rgba(255,228,94,0.16)',
   onAccent: '#1B1E3F',
@@ -70,6 +70,8 @@ export function useTheme(): Theme {
 
 /** hex colour + opacity (0-1) → #RRGGBBAA */
 export const tint = (hex: string, a: number) => {
+  const m = hex.match(/^rgba?\(([^)]+)\)/);
+  if (m) { const [r, g, b, al = '1'] = m[1].split(',').map((x) => x.trim()); return `rgba(${r},${g},${b},${(Number(al) * Math.max(0, Math.min(1, a))).toFixed(3)})`; }
   const h = hex.replace('#', '');
   const full = h.length === 3 ? h.split('').map((c) => c + c).join('') : h.slice(0, 6);
   return `#${full}${Math.round(Math.max(0, Math.min(1, a)) * 255).toString(16).padStart(2, '0')}`;
