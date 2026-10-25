@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 import { Button, Card, Field, Icon, ic, LinkText, Pill, Pressy, Row, Segments, T, useAccent } from '@/components/ui';
 import { useMenu, useNotice } from '@/components/Menu';
+import { DateField } from '@/components/DateField';
 import { ApiError, deleteMaterial, ERROR_UPGRADE, pickDocuments, pickPhoto, uploadMaterial, type Picked } from '@/lib/api';
 import { fmtDay, isAssignment, KIND_LABEL, localToISO, type Deadline, type Material } from '@/lib/data';
 import { supabase } from '@/lib/supabase';
@@ -67,7 +68,7 @@ export function Materials({ data }: { data: CourseData }) {
 
   async function createAssignment() {
     const due = localToISO(newAsg.due.trim());
-    if (!newAsg.label.trim() || !due) { notice('Add a name and a due date', 'Use the format 2026-11-02 23:59.'); return; }
+    if (!newAsg.label.trim() || !due) { notice('Add a name and a due date'); return; }
     const { data: row, error } = await supabase.from('deadlines').insert({ course_id: data.course!.id, kind: 'assignment', label: newAsg.label.trim(), due_at: due, covers: newAsg.covers.trim() || null }).select('id').single();
     if (error) { notice("Couldn't add it", error.message); return; }
     setNewAsg({ label: '', due: '', covers: '' }); await data.reload(); setTab(row!.id);
@@ -84,7 +85,7 @@ export function Materials({ data }: { data: CourseData }) {
           <T variant="heading">New assignment</T>
           <T variant="small" muted>Each assignment gets its own place for the handout, starter code and your group's progress, so it never mixes with lecture material.</T>
           <Field label="Name" placeholder="PA2" value={newAsg.label} onChangeText={(v) => setNewAsg({ ...newAsg, label: v })} />
-          <Field label="Due (YYYY-MM-DD HH:MM)" placeholder="2026-11-02 23:59" value={newAsg.due} onChangeText={(v) => setNewAsg({ ...newAsg, due: v })} autoCapitalize="none" />
+          <DateField label="Due" value={newAsg.due} onChange={(v) => setNewAsg({ ...newAsg, due: v })} />
           <Field label="Short description (optional)" placeholder="Link-state routing, part 2" value={newAsg.covers} onChangeText={(v) => setNewAsg({ ...newAsg, covers: v })} />
           <Button title="Create assignment" onPress={createAssignment} />
         </View>

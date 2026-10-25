@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { ActivityIndicator, Pressable, View } from 'react-native';
 import { Button, Card, Field, LinkText, Pill, Row, Segments, T, useAccent } from '@/components/ui';
 import { Text } from 'react-native';
+import { DateField } from '@/components/DateField';
 import { useMenu, useNotice } from '@/components/Menu';
 import { ApiError, runJob } from '@/lib/api';
 import { daysUntil, fmtDay, fmtTime, isoToLocalInput, KIND_LABEL, localToISO, relDays, type Deadline, type DeadlineKind } from '@/lib/data';
@@ -28,7 +29,7 @@ export function Deadlines({ data }: { data: CourseData }) {
   async function save() {
     if (!draft) return;
     const due = localToISO(draft.due.trim());
-    if (!due) { notice('Check the date', 'Use the format 2026-11-02 23:59.'); return; }
+    if (!due) { notice('Pick a date and time'); return; }
     const row = { course_id: c.id, kind: draft.kind, label: draft.label.trim() || null, due_at: due, covers: draft.covers.trim() || null };
     const { error } = draft.id ? await supabase.from('deadlines').update(row).eq('id', draft.id) : await supabase.from('deadlines').insert(row);
     if (error) { notice("Couldn't save", error.message); return; }
@@ -106,7 +107,7 @@ export function Deadlines({ data }: { data: CourseData }) {
           <T variant="heading">{draft.id ? 'Edit deadline' : 'New deadline'}</T>
           <Segments items={KINDS.map((k) => ({ key: k, label: KIND_LABEL[k] }))} value={draft.kind} onChange={(k) => setDraft({ ...draft, kind: k })} />
           <Field label="Label (optional)" placeholder="Midterm 1" value={draft.label} onChangeText={(v) => setDraft({ ...draft, label: v })} />
-          <Field label="Date and time (YYYY-MM-DD HH:MM)" placeholder="2026-10-21 11:30" value={draft.due} onChangeText={(v) => setDraft({ ...draft, due: v })} autoCapitalize="none" />
+          <DateField label="Date and time" value={draft.due} onChange={(v) => setDraft({ ...draft, due: v })} />
           <Field label="What it covers" placeholder="Lectures 1-7: framing, CRC, Ethernet, routing" value={draft.covers} onChangeText={(v) => setDraft({ ...draft, covers: v })} multiline />
           <Row>
             <Button title="Save" onPress={save} />

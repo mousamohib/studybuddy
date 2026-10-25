@@ -4,6 +4,7 @@ import { useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, View } from 'react-native';
 import { Button, Card, Field, ic, Row, Screen, Stickers, T } from '@/components/ui';
 import { useMenu } from '@/components/Menu';
+import { DateField } from '@/components/DateField';
 import { ApiError, ERROR_UPGRADE, pickDocuments, pickPhoto, runJob, uploadMaterial, waitMaterial, type Picked } from '@/lib/api';
 import { useAccount } from '@/lib/auth';
 import { KIND_LABEL, localToISO, rebuildPlan, type DeadlineKind } from '@/lib/data';
@@ -70,7 +71,7 @@ export default function NewCourse() {
   async function save() {
     if (!code.trim()) { setErr('Add the course code.'); return; }
     const bad = found.filter((f) => f.keep && !localToISO(f.due));
-    if (bad.length) { setErr(`Fix the date for "${bad[0].label || KIND_LABEL[bad[0].kind]}" (format 2026-11-02 23:59) or untick it.`); return; }
+    if (bad.length) { setErr(`Fix the date for "${bad[0].label || KIND_LABEL[bad[0].kind]}" (pick a date and time) or untick it.`); return; }
     setSaving(true); setErr('');
     const courseId = ids.current.course!;
     await supabase.from('courses').update({ code: code.trim().toUpperCase(), name: name.trim() || null, ai_policy: policy.trim() || null, rules: rules.trim() || null }).eq('id', courseId);
@@ -152,7 +153,7 @@ export default function NewCourse() {
                   <T style={{ fontWeight: '600', flex: 1 }}>{KIND_LABEL[f.kind]}{f.weight ? ` · ${f.weight}` : ''}</T>
                 </Pressable>
                 <Field placeholder="Label" value={f.label} onChangeText={(v) => set({ label: v })} />
-                <Field placeholder="YYYY-MM-DD HH:MM" value={f.due} onChangeText={(v) => set({ due: v })} autoCapitalize="none" />
+                <DateField value={f.due} onChange={(v) => set({ due: v })} />
                 <Field placeholder="What it covers" value={f.covers} onChangeText={(v) => set({ covers: v })} multiline />
               </Card>
             );

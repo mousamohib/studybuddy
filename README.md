@@ -77,6 +77,15 @@ Share links point to the web version. Once it's hosted (for example `npx expo ex
 - Dates are typed as `YYYY-MM-DD HH:MM`.
 - Big files take a little while: each server task can run for about 150 seconds on Supabase's free plan.
 
+## Email codes (sign-up confirmation and password reset)
+
+The app uses 6-digit codes instead of email links, so it works inside the phone app. In Supabase → **Authentication** → **Emails** (Templates):
+
+- **Confirm signup**: replace the body with `<h2>Your StudyBuddy code</h2><p>Enter this code in the app: <strong>{{ .Token }}</strong></p>`
+- **Reset password**: replace the body with `<h2>Reset your StudyBuddy password</h2><p>Enter this code in the app: <strong>{{ .Token }}</strong></p>`
+
+Supabase's built-in email sender only allows a few emails an hour. Before inviting people, connect your own sender under **Authentication → SMTP** (Resend or Postmark have free tiers).
+
 ## Live updates while Claude works
 
 Clone the repo (`git clone https://github.com/mousamohib/studybuddy.git studybuddy-live`), copy your `app/.env` into it, run `npx expo start` in `app`, then in a second terminal run:
