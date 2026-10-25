@@ -1,7 +1,7 @@
 import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Text, View, Platform } from 'react-native';
-import { AccentProvider, Button, ic, Row, Screen, Segments, T , useSlab } from '@/components/ui';
+import { AccentProvider, Button, ic, Row, Screen, Segments, T , useSlab , onNote, onNoteSoft, noteChip, noteBg, Tape } from '@/components/ui';
 import { Chats } from '@/components/course/Chats';
 import { Deadlines } from '@/components/course/Deadlines';
 import { Materials } from '@/components/course/Materials';
@@ -23,9 +23,9 @@ const SECTIONS: { key: Section; label: string }[] = [
 
 function Stat({ n, label }: { n: string | number; label: string }) {
   return (
-    <View style={{ flex: 1, backgroundColor: 'rgba(255,255,255,0.16)', borderRadius: radius.md, padding: space.md, gap: 2 }}>
-      <Text style={{ color: '#fff', fontFamily: font.display, fontSize: 22, lineHeight: 26 }}>{n}</Text>
-      <Text style={{ color: 'rgba(255,255,255,0.85)', fontFamily: font.semi, fontSize: 12.5 }}>{label}</Text>
+    <View style={{ flex: 1, backgroundColor: noteChip, borderRadius: radius.md, padding: space.md, gap: 2 }}>
+      <Text style={{ color: onNote, fontFamily: font.display, fontSize: 22, lineHeight: 26 }}>{n}</Text>
+      <Text style={{ color: onNoteSoft, fontFamily: font.semi, fontSize: 12.5 }}>{label}</Text>
     </View>
   );
 }
@@ -57,12 +57,13 @@ export default function CourseHub() {
 
   return (
     <Screen>
-      <Stack.Screen options={wide ? { title: c.code, headerStyle: { backgroundColor: t.bg }, headerTintColor: t.text } : { title: '', headerStyle: { backgroundColor: colour }, headerTintColor: '#FFFFFF' }} />
-      <View style={[{ backgroundColor: colour, gap: space.lg, overflow: 'hidden' }, wide ? { borderRadius: radius.xl, padding: space.xl, ...slab } : { marginHorizontal: -space.lg, marginTop: -space.lg, paddingHorizontal: space.lg, paddingBottom: space.xl, paddingTop: space.sm, borderBottomLeftRadius: radius.xl, borderBottomRightRadius: radius.xl }]}>
+      <Stack.Screen options={wide ? { title: c.code, headerStyle: { backgroundColor: t.bg }, headerTintColor: t.text } : { title: '', headerStyle: { backgroundColor: noteBg(colour) }, headerTintColor: onNote }} />
+      <View style={[{ backgroundColor: noteBg(colour), gap: space.lg, overflow: Platform.OS === 'web' ? 'visible' : 'hidden' }, wide ? { borderRadius: radius.xl, padding: space.xl, ...slab } : { marginHorizontal: -space.lg, marginTop: -space.lg, paddingHorizontal: space.lg, paddingBottom: space.xl, paddingTop: space.sm, borderBottomLeftRadius: radius.xl, borderBottomRightRadius: radius.xl }]}>
+        {wide && <Tape />}
         {Platform.OS !== 'web' && <View style={{ position: 'absolute', right: -50, top: -60, width: 200, height: 200, borderRadius: 100, backgroundColor: 'rgba(255,255,255,0.1)' }} />}
         <View style={{ gap: 4 }}>
-          <Text style={{ color: '#fff', fontFamily: font.display, fontSize: 38, lineHeight: 42, letterSpacing: -1.2 }}>{c.code}</Text>
-          {c.name ? <Text style={{ color: 'rgba(255,255,255,0.9)', fontFamily: font.medium, fontSize: 16 }}>{c.name}</Text> : null}
+          <Text style={{ color: onNote, fontFamily: font.display, fontSize: 38, lineHeight: 42, letterSpacing: -1.2 }}>{c.code}</Text>
+          {c.name ? <Text style={{ color: onNoteSoft, fontFamily: font.medium, fontSize: 16 }}>{c.name}</Text> : null}
         </View>
         <Row style={{ flexWrap: 'nowrap' }}>
           <Stat n={ready} label={ready === 1 ? 'file' : 'files'} />

@@ -1,7 +1,7 @@
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Text, View, Platform } from 'react-native';
-import { Button, Empty, Icon, ic, Pressy, Row, Screen, T , useSlab } from '@/components/ui';
+import { Button, Empty, Icon, ic, Pressy, Row, Screen, T , useSlab , onNote, onNoteSoft, noteChip, noteBg, Tape } from '@/components/ui';
 import { useAccount } from '@/lib/auth';
 import { courseColour, daysUntil, KIND_LABEL, type Course, type DeadlineKind } from '@/lib/data';
 import { supabase } from '@/lib/supabase';
@@ -14,6 +14,7 @@ export default function Courses() {
   const { plan, limits } = useAccount();
   const [courses, setCourses] = useState<C[] | null>(null);
   const slab = useSlab();
+  const slabB = useSlab(1.2);
 
   useFocusEffect(useCallback(() => {
     supabase.from('courses').select('*, deadlines(kind, label, due_at, done), materials(id)').order('created_at')
@@ -40,25 +41,26 @@ export default function Courses() {
           const n = next ? daysUntil(next.due_at) : null;
           return (
             <Pressy key={c.id} onPress={() => router.push({ pathname: '/course/[id]', params: { id: c.id } })}
-              style={[{ flexGrow: 1, flexBasis: 160, minHeight: 190, backgroundColor: col, borderRadius: radius.xl, padding: space.lg, justifyContent: 'space-between', overflow: 'hidden' }, slab]}>
+              style={[{ flexGrow: 1, flexBasis: 160, minHeight: 190, backgroundColor: noteBg(col), borderRadius: radius.xl, padding: space.lg, justifyContent: 'space-between', overflow: Platform.OS === 'web' ? 'visible' : 'hidden' }, i % 2 ? slabB : slab]}>
+              <Tape />
               {/* notebook spine */}
               <View style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 10, backgroundColor: 'rgba(0,0,0,0.12)' }} />
               {Platform.OS !== 'web' && <View style={{ position: 'absolute', right: -30, bottom: -30, width: 120, height: 120, borderRadius: 60, backgroundColor: 'rgba(255,255,255,0.12)' }} />}
               <View style={{ gap: 4, paddingLeft: 4 }}>
-                <Text style={{ color: '#fff', fontFamily: font.display, fontSize: 26, lineHeight: 28, letterSpacing: -0.6 }}>{c.code}</Text>
-                {c.name ? <Text numberOfLines={2} style={{ color: 'rgba(255,255,255,0.88)', fontFamily: font.medium, fontSize: 14, lineHeight: 19 }}>{c.name}</Text> : null}
+                <Text style={{ color: onNote, fontFamily: font.display, fontSize: 26, lineHeight: 28, letterSpacing: -0.6 }}>{c.code}</Text>
+                {c.name ? <Text numberOfLines={2} style={{ color: onNoteSoft, fontFamily: font.medium, fontSize: 14, lineHeight: 19 }}>{c.name}</Text> : null}
               </View>
               <View style={{ gap: 8, paddingLeft: 4 }}>
                 {next ? (
-                  <View style={{ alignSelf: 'flex-start', backgroundColor: n! <= 3 ? '#FFFFFF' : 'rgba(255,255,255,0.22)', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 }}>
-                    <Text style={{ color: n! <= 3 ? col : '#fff', fontFamily: font.bold, fontSize: 12.5 }}>
+                  <View style={{ alignSelf: 'flex-start', backgroundColor: n! <= 3 ? '#FFFFFF' : noteChip, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 }}>
+                    <Text style={{ color: n! <= 3 ? (Platform.OS === 'web' ? '#E5385F' : col) : onNote, fontFamily: font.bold, fontSize: 12.5 }}>
                       {next.label || KIND_LABEL[next.kind]} · {n === 0 ? 'today' : n === 1 ? 'tomorrow' : `${n} days`}
                     </Text>
                   </View>
                 ) : null}
                 <Row style={{ gap: 12 }}>
-                  <Row style={{ gap: 4 }}><Icon name={ic('doc.fill', 'description')} size={15} color="rgba(255,255,255,0.85)" /><Text style={{ color: 'rgba(255,255,255,0.85)', fontFamily: font.semi, fontSize: 13 }}>{c.materials.length}</Text></Row>
-                  <Row style={{ gap: 4 }}><Icon name={ic('flag.fill', 'flag')} size={15} color="rgba(255,255,255,0.85)" /><Text style={{ color: 'rgba(255,255,255,0.85)', fontFamily: font.semi, fontSize: 13 }}>{c.deadlines.filter((d) => !d.done).length}</Text></Row>
+                  <Row style={{ gap: 4 }}><Icon name={ic('doc.fill', 'description')} size={15} color={onNoteSoft} /><Text style={{ color: onNoteSoft, fontFamily: font.semi, fontSize: 13 }}>{c.materials.length}</Text></Row>
+                  <Row style={{ gap: 4 }}><Icon name={ic('flag.fill', 'flag')} size={15} color={onNoteSoft} /><Text style={{ color: onNoteSoft, fontFamily: font.semi, fontSize: 13 }}>{c.deadlines.filter((d) => !d.done).length}</Text></Row>
                 </Row>
               </View>
             </Pressy>

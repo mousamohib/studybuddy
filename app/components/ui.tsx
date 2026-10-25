@@ -57,13 +57,19 @@ export function Screen({ children, scroll = true, style, wide }: { children: Rea
   const inner: ViewStyle = { width: '100%', maxWidth: wide ? 1100 : 820, alignSelf: 'center', ...(big ? { paddingHorizontal: space.xxl, paddingTop: space.xxl } : {}) };
   if (!scroll) return <View style={[{ flex: 1, backgroundColor: t.bg, padding: space.lg }, inner, style]}>{children}</View>;
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: t.bg }} contentInsetAdjustmentBehavior="automatic"
+    <ScrollView style={[{ flex: 1, backgroundColor: t.bg }, paperBg(t)]} contentInsetAdjustmentBehavior="automatic"
       contentContainerStyle={[{ padding: space.lg, gap: space.lg, paddingBottom: 120 }, inner, style]}
       keyboardShouldPersistTaps="handled">
       {children}
     </ScrollView>
   );
 }
+
+/** Website: ruled notebook paper with a red margin line. */
+export const paperBg = (t: { dark: boolean; bg: string }): ViewStyle => (Platform.OS !== 'web' ? {} : ({
+  backgroundImage: `linear-gradient(90deg, transparent 38px, ${t.dark ? 'rgba(255,107,139,0.28)' : 'rgba(229,56,95,0.35)'} 38px, ${t.dark ? 'rgba(255,107,139,0.28)' : 'rgba(229,56,95,0.35)'} 39.5px, transparent 39.5px, transparent 42px, ${t.dark ? 'rgba(255,107,139,0.28)' : 'rgba(229,56,95,0.35)'} 42px, ${t.dark ? 'rgba(255,107,139,0.28)' : 'rgba(229,56,95,0.35)'} 43.5px, transparent 43.5px), repeating-linear-gradient(transparent 0 33px, ${t.dark ? 'rgba(130,150,255,0.13)' : 'rgba(80,120,230,0.17)'} 33px 34px)`,
+  backgroundAttachment: 'local',
+} as ViewStyle));
 
 const WEIGHT_FONT: Record<string, string> = { '400': font.body, normal: font.body, '500': font.medium, '600': font.semi, '700': font.bold, bold: font.bold, '800': font.bold, '900': font.bold };
 const HEADING_VARIANTS = new Set(['display', 'title', 'heading']);
@@ -108,7 +114,7 @@ export function Button({ title, onPress, kind = 'primary', disabled, loading, st
         alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8,
         borderWidth: kind === 'secondary' ? 1.5 : 0, borderColor: tint(main, 0.5), opacity: disabled ? 0.45 : 1,
         // Website: ink slab with a hard shadow, like the front page.
-        ...(Platform.OS === 'web' && kind !== 'ghost' && kind !== 'soft' ? { borderWidth: 2, borderColor: t.text, boxShadow: `4px 4px 0 ${t.text}`, marginRight: 4, marginBottom: 4 } as object : {}),
+        ...(Platform.OS === 'web' && kind !== 'ghost' && kind !== 'soft' ? { boxShadow: `4px 4px 0 ${kind === 'highlight' ? t.text : t.danger}`, marginRight: 4, marginBottom: 4 } as object : {}),
       }, style]}>
       {loading ? <ActivityIndicator color={fg} /> : (
         <>
@@ -320,8 +326,24 @@ export function IconButton({ icon, onPress, color, bg, label, size = 40 }: { ico
   );
 }
 
-/** On the website, coloured blocks get an ink outline and a hard shadow (like the front page). */
-export function useSlab(): ViewStyle {
-  const t = useTheme();
-  return Platform.OS === 'web' ? ({ borderWidth: 2.5, borderColor: t.text, boxShadow: `7px 7px 0 ${t.text}`, marginRight: 7, marginBottom: 7 } as ViewStyle) : {};
+/** On the website, coloured blocks look like sticky notes: a slight tilt and a soft paper shadow. */
+export function useSlab(tilt = -0.6): ViewStyle {
+  return Platform.OS === 'web' ? ({ boxShadow: '0 18px 22px -14px rgba(27,30,63,0.5), 0 2px 3px rgba(27,30,63,0.08)', transform: [{ rotate: `${tilt}deg` }], marginTop: 10 } as ViewStyle) : {};
+}
+
+/** A strip of sticky tape across the top of a block (website only). */
+export function Tape({ left = '50%' }: { left?: `${number}%` }) {
+  if (Platform.OS !== 'web') return null;
+  return <View pointerEvents="none" style={{ position: 'absolute', top: -12, left, width: 92, marginLeft: -46, height: 24, backgroundColor: 'rgba(255,255,240,0.6)', transform: [{ rotate: '-3deg' }], zIndex: 5, boxShadow: '0 1px 2px rgba(0,0,0,0.12)' } as ViewStyle} />;
+}
+
+// Coloured blocks: strong colours with white text in the phone app; pastel sticky notes with ink text on the website.
+const WEB = Platform.OS === 'web';
+export const onNote = WEB ? '#1B1E3F' : '#FFFFFF';
+export const onNoteSoft = WEB ? 'rgba(27,30,63,0.72)' : 'rgba(255,255,255,0.86)';
+export const noteChip = WEB ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.2)';
+export const noteBg = (col: string) => (WEB ? lightenHex(col, 0.55) : col);
+function lightenHex(hex: string, amt: number) {
+  const h = hex.replace('#', '').slice(0, 6);
+  return `#${[0, 2, 4].map((i) => Math.round(parseInt(h.slice(i, i + 2), 16) + (255 - parseInt(h.slice(i, i + 2), 16)) * amt).toString(16).padStart(2, '0')).join('')}`;
 }

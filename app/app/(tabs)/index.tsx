@@ -1,7 +1,7 @@
 import { router } from 'expo-router';
 import { useState, type ReactNode } from 'react';
 import { ActivityIndicator, ScrollView, Text, View, Platform } from 'react-native';
-import { Button, Card, CourseTag, Empty, Field, Icon, IconButton, ic, ListRow, Pressy, Ring, Row, Screen, Section, T, LinkText , useSlab } from '@/components/ui';
+import { Button, Card, CourseTag, Empty, Field, Icon, IconButton, ic, ListRow, Pressy, Ring, Row, Screen, Section, T, LinkText , useSlab , onNote, onNoteSoft, noteChip, noteBg, Tape } from '@/components/ui';
 import { PlanSession, type FullSession } from '@/components/PlanSession';
 import { Rich } from '@/components/Rich';
 import { Confetti } from '@/components/Confetti';
@@ -132,22 +132,23 @@ export default function Today() {
         const code = codeOf(first.course_id), col = p.colourOf(code), n = daysUntil(first.due_at);
         return (
           <Pressy onPress={() => router.push({ pathname: '/course/[id]', params: { id: first.course_id, section: 'deadlines' } })}
-            style={[{ backgroundColor: col, borderRadius: radius.xl, padding: space.xl, gap: space.md, overflow: 'hidden' }, slab]}>
+            style={[{ backgroundColor: noteBg(col), borderRadius: radius.xl, padding: space.xl, gap: space.md, overflow: Platform.OS === 'web' ? 'visible' : 'hidden' }, slab]}>
+            <Tape />
             {Platform.OS !== 'web' && <View style={{ position: 'absolute', right: -40, top: -40, width: 180, height: 180, borderRadius: 90, backgroundColor: 'rgba(255,255,255,0.12)' }} />}
             {Platform.OS !== 'web' && <View style={{ position: 'absolute', right: 40, bottom: -70, width: 140, height: 140, borderRadius: 70, backgroundColor: 'rgba(255,255,255,0.08)' }} />}
             <Row style={{ justifyContent: 'space-between' }}>
-              <View style={{ backgroundColor: 'rgba(255,255,255,0.22)', borderRadius: 8, paddingHorizontal: 9, paddingVertical: 3 }}>
-                <Text style={{ color: '#fff', fontFamily: font.heading, fontSize: 13 }}>{code}</Text>
+              <View style={{ backgroundColor: noteChip, borderRadius: 8, paddingHorizontal: 9, paddingVertical: 3 }}>
+                <Text style={{ color: onNote, fontFamily: font.heading, fontSize: 13 }}>{code}</Text>
               </View>
-              <Text style={{ color: 'rgba(255,255,255,0.85)', fontFamily: font.semi, fontSize: 13 }}>{KIND_LABEL[first.kind]}</Text>
+              <Text style={{ color: onNoteSoft, fontFamily: font.semi, fontSize: 13 }}>{KIND_LABEL[first.kind]}</Text>
             </Row>
             <Row style={{ alignItems: 'flex-end', gap: space.md, flexWrap: 'nowrap' }}>
-              <Text style={{ color: '#fff', fontFamily: font.display, fontSize: n > 99 ? 56 : 76, lineHeight: n > 99 ? 58 : 76, letterSpacing: -3 }}>{n === 0 ? 'Today' : n}</Text>
-              {n > 0 && <Text style={{ color: '#fff', fontFamily: font.heading, fontSize: 20, marginBottom: 10 }}>{n === 1 ? 'day to go' : 'days to go'}</Text>}
+              <Text style={{ color: onNote, fontFamily: font.display, fontSize: n > 99 ? 56 : 76, lineHeight: n > 99 ? 58 : 76, letterSpacing: -3 }}>{n === 0 ? 'Today' : n}</Text>
+              {n > 0 && <Text style={{ color: onNote, fontFamily: font.heading, fontSize: 20, marginBottom: 10 }}>{n === 1 ? 'day to go' : 'days to go'}</Text>}
             </Row>
             <View>
-              <Text style={{ color: '#fff', fontFamily: font.heading, fontSize: 22 }}>{first.label || KIND_LABEL[first.kind]}</Text>
-              <Text style={{ color: 'rgba(255,255,255,0.85)', fontFamily: font.medium, fontSize: 14 }}>{fmtDay(first.due_at)} at {fmtTime(first.due_at)}{first.covers ? ` · ${first.covers}` : ''}</Text>
+              <Text style={{ color: onNote, fontFamily: font.heading, fontSize: 22 }}>{first.label || KIND_LABEL[first.kind]}</Text>
+              <Text style={{ color: onNoteSoft, fontFamily: font.medium, fontSize: 14 }}>{fmtDay(first.due_at)} at {fmtTime(first.due_at)}{first.covers ? ` · ${first.covers}` : ''}</Text>
             </View>
           </Pressy>
         );
