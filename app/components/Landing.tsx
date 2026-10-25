@@ -51,7 +51,28 @@ export default function Landing({ onStart, onSignIn, onLegal }: Props) {
     if (!root) return;
     const io = new IntersectionObserver((es) => es.forEach((e) => e.isIntersecting && e.target.classList.add('in')), { root, threshold: 0.15 });
     root.querySelectorAll('.reveal').forEach((el) => io.observe(el));
-    return () => io.disconnect();
+    // Depth: the whole desk leans toward the pointer, and cards tip under it.
+    const still = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    let last: HTMLElement | null = null;
+    const move = (e: PointerEvent) => {
+      if (still) return;
+      root.style.setProperty('--px', ((e.clientX / window.innerWidth) - 0.5).toFixed(3));
+      root.style.setProperty('--py', ((e.clientY / window.innerHeight) - 0.5).toFixed(3));
+      const el = (e.target as HTMLElement).closest?.('.tilt3d') as HTMLElement | null;
+      if (last && last !== el) { last.style.setProperty('--rx', '0deg'); last.style.setProperty('--ry', '0deg'); last.style.setProperty('--gl', '0'); }
+      if (el) {
+        const r = el.getBoundingClientRect();
+        const x = (e.clientX - r.left) / r.width - 0.5, y = (e.clientY - r.top) / r.height - 0.5;
+        el.style.setProperty('--ry', `${(x * 14).toFixed(2)}deg`);
+        el.style.setProperty('--rx', `${(-y * 12).toFixed(2)}deg`);
+        el.style.setProperty('--gx', `${((x + 0.5) * 100).toFixed(0)}%`);
+        el.style.setProperty('--gy', `${((y + 0.5) * 100).toFixed(0)}%`);
+        el.style.setProperty('--gl', '1');
+      }
+      last = el;
+    };
+    root.addEventListener('pointermove', move);
+    return () => { io.disconnect(); root.removeEventListener('pointermove', move); };
   }, []);
 
   function drop() {
@@ -126,7 +147,7 @@ export default function Landing({ onStart, onSignIn, onLegal }: Props) {
             {[90, 70, 84, 60, 78, 50, 66, 72].map((w, i) => <div key={i} className="line" style={{ width: `${w}%` }} />)}
             <span className="hand grab">drag me →</span>
           </div>
-          <div className="clipboard">
+          <div className="clipboard tilt3d">
             <i className="clip" />
             <div className={`drop ${stage}`} onDragOver={(e) => { e.preventDefault(); if (stage === 'idle') setStage('over'); }}
               onDragLeave={() => stage === 'over' && setStage('idle')} onDrop={(e) => { e.preventDefault(); drop(); }} onClick={drop}>
@@ -159,8 +180,8 @@ export default function Landing({ onStart, onSignIn, onLegal }: Props) {
       <section className="tutor reveal">
         <Head n="2" title="Didn't get it? Change the answer." note="tap a tab →" />
         <div className="tutorDesk">
-          <div className="sticky q" style={{ background: C.pink }}><Tape />what's a derivative 😭</div>
-          <div className="indexCard">
+          <div className="sticky q tilt3d" style={{ background: C.pink }}><Tape />what's a derivative 😭</div>
+          <div className="indexCard tilt3d">
             <div className="tabs">
               {(Object.keys(ANSWERS) as (keyof typeof ANSWERS)[]).map((k) => (
                 <button key={k} className={`tab ${mode === k ? 'on' : ''}`} style={{ background: ANSWERS[k].col }} onClick={() => setMode(k)}>{ANSWERS[k].label}</button>
@@ -174,7 +195,7 @@ export default function Landing({ onStart, onSignIn, onLegal }: Props) {
       <section className="exam reveal">
         <Head n="3" title="When's your exam?" note="drag the ruler" />
         <div className="examDesk">
-          <div className="deskCal">
+          <div className="deskCal tilt3d">
             <div className="rings" aria-hidden>{Array.from({ length: 6 }).map((_, i) => <i key={i} />)}</div>
             <div className="calTop" style={{ background: mood.c }}>EXAM IN</div>
             <div className="calPage" key={flip}>
@@ -184,7 +205,7 @@ export default function Landing({ onStart, onSignIn, onLegal }: Props) {
           </div>
           <div className="examRight">
             <div className="hand mood" style={{ color: mood.c }}>{mood.t}<small>{mood.d}</small></div>
-            <div className="ruler">
+            <div className="ruler tilt3d">
               <input type="range" min={1} max={30} value={daysLeft} onChange={(e) => setDays(+e.target.value)} aria-label="Days until your exam" />
             </div>
             <div className="blocks">{Array.from({ length: sessions }).map((_, i) => <div key={i} style={{ background: Object.values(C)[i % 5], animationDelay: `${i * 15}ms`, transform: `rotate(${((i * 37) % 9) - 4}deg)` }} />)}</div>
@@ -198,7 +219,7 @@ export default function Landing({ onStart, onSignIn, onLegal }: Props) {
           <button className="panic" onClick={hitPanic}><span>PANIC</span></button>
           <span className="hand panicNote">press me</span>
         </div>
-        <div className="indexCard plain">
+        <div className="indexCard plain tilt3d">
           <Tape />
           {panic ? (
             <>
@@ -222,13 +243,13 @@ export default function Landing({ onStart, onSignIn, onLegal }: Props) {
       <section className="price reveal">
         <Head n="4" title="Free to start." note="no card needed" />
         <div className="plans">
-          <div className="sticky plan" style={{ background: C.yellow, transform: 'rotate(-2deg)' }}>
+          <div className="sticky plan tilt3d" style={{ background: C.yellow, ['--rz' as string]: '-2deg' }}>
             <Tape />
             <b className="planName">Free</b><div className="cost">$0</div>
             <ul><li>2 courses</li><li>7 uploads a month</li><li>20 tutor messages</li><li>study plan + calendar</li></ul>
             <button className="btn dark" onClick={() => onStart()}>Start free →</button>
           </div>
-          <div className="sticky plan" style={{ background: '#9FB0FF', transform: 'rotate(1.5deg)' }}>
+          <div className="sticky plan tilt3d" style={{ background: '#9FB0FF', ['--rz' as string]: '1.5deg' }}>
             <Tape />
             <span className="hand circled">best for exam season</span>
             <b className="planName">Pro</b><div className="cost">C$9.99<small>/mo</small></div>
@@ -348,11 +369,13 @@ function Notes() {
   }
   return (
     <div className="heroArt" ref={box} onPointerMove={move} onPointerUp={up} onPointerCancel={up}>
+      <Pencil />
+      <Clip />
       {NOTES.map((s) => {
         const p = pos[s.id];
         return (
           <div key={s.id} className={`sticky heroNote ${p.lift ? 'lift' : ''}`} onPointerDown={(e) => down(e, s.id)}
-            style={{ left: `${p.x * 100}%`, top: `${p.y * 100}%`, transform: `rotate(${p.r}deg)`, zIndex: p.z, background: s.bg }}>
+            style={{ left: `${p.x * 100}%`, top: `${p.y * 100}%`, ['--note-rot' as string]: `rotate(${p.r}deg)${p.lift ? ' translateZ(80px) scale(1.06)' : ''}`, zIndex: p.z, background: s.bg }}>
             <Tape />
             <span>{s.top}</span><b className="hand">{s.big}</b>
           </div>
@@ -360,6 +383,33 @@ function Notes() {
       })}
       <span className="hand hint">↖ peel these off &amp; move them</span>
     </div>
+  );
+}
+
+function Pencil() {
+  return (
+    <svg className="pencil" viewBox="0 0 420 40" aria-hidden>
+      <defs>
+        <linearGradient id="pb" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#FFE27A" /><stop offset=".45" stopColor="#FFC93C" /><stop offset="1" stopColor="#C98A00" /></linearGradient>
+        <linearGradient id="pm" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#eef0f6" /><stop offset=".5" stopColor="#b7bccd" /><stop offset="1" stopColor="#7d8296" /></linearGradient>
+        <linearGradient id="pe" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#ff9db8" /><stop offset="1" stopColor="#c43a63" /></linearGradient>
+        <linearGradient id="pw" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#f6dcb6" /><stop offset="1" stopColor="#b98a52" /></linearGradient>
+      </defs>
+      <rect x="0" y="6" width="34" height="28" fill="url(#pe)" />
+      <rect x="34" y="5" width="30" height="30" fill="url(#pm)" />
+      <rect x="64" y="6" width="290" height="28" fill="url(#pb)" />
+      <polygon points="354,6 404,20 354,34" fill="url(#pw)" />
+      <polygon points="392,16.5 420,20 392,23.5" fill="#2b2b33" />
+    </svg>
+  );
+}
+
+function Clip() {
+  return (
+    <svg className="paperclip" viewBox="0 0 40 110" aria-hidden>
+      <defs><linearGradient id="cl" x1="0" x2="1"><stop offset="0" stopColor="#8d93a8" /><stop offset=".5" stopColor="#eef0f7" /><stop offset="1" stopColor="#8d93a8" /></linearGradient></defs>
+      <path d="M12 30 V88 a8 8 0 0 0 16 0 V18 a12 12 0 0 0 -24 0 V92 a16 16 0 0 0 32 0 V34" fill="none" stroke="url(#cl)" strokeWidth="4.5" strokeLinecap="round" />
+    </svg>
   );
 }
 
@@ -411,22 +461,39 @@ button:focus-visible, input:focus-visible { outline: 3px dashed var(--red); outl
 .link:hover { color: var(--ink); text-decoration: underline wavy var(--red); }
 
 /* buttons: label-maker strips */
-.btn { background: var(--ink); color: var(--paper); padding: 14px 22px; font-size: 17px; box-shadow: 4px 4px 0 var(--red); transition: transform .1s, box-shadow .1s; }
-.btn:hover { transform: translate(-2px, -2px) rotate(-1deg); box-shadow: 6px 6px 0 var(--red); }
-.btn:active { transform: translate(4px, 4px); box-shadow: 0 0 0 var(--red); }
-.btn.small { padding: 9px 14px; font-size: 15px; box-shadow: 3px 3px 0 var(--red); }
+.btn { --cap: #0b0d24; background: linear-gradient(#2b2f5e, #1B1E3F); color: #fff; padding: 14px 22px; font-size: 17px; box-shadow: 0 6px 0 var(--cap), 0 14px 18px -6px rgba(27,30,63,.55), inset 0 1px 0 rgba(255,255,255,.18); transition: transform .08s, box-shadow .08s; transform: translateY(0); }
+.btn:hover { transform: translateY(-2px); box-shadow: 0 8px 0 var(--cap), 0 18px 22px -6px rgba(27,30,63,.55), inset 0 1px 0 rgba(255,255,255,.18); }
+.btn:active { transform: translateY(6px); box-shadow: 0 0 0 var(--cap), 0 4px 8px -4px rgba(27,30,63,.5), inset 0 1px 0 rgba(255,255,255,.18); }
+.btn.small { padding: 9px 14px; font-size: 15px; }
 .btn.big { padding: 18px 28px; font-size: 20px; }
-.btn.ghost { background: var(--card); color: var(--ink); box-shadow: 4px 4px 0 var(--ink); border: 2px solid var(--ink); }
-.btn.dark { background: #1B1E3F; color: #FFE45E; box-shadow: 4px 4px 0 #1B1E3F44; }
+.btn.ghost { --cap: #b9bcd3; background: linear-gradient(#ffffff, #eceef7); color: #1B1E3F; }
+.btn.dark { color: #FFE45E; }
 mark { background: linear-gradient(100deg, transparent 2%, rgba(255,222,60,.9) 4%, rgba(255,222,60,.75) 96%, transparent 98%); background-size: 100% 60%; background-position: 0 70%; background-repeat: no-repeat; color: inherit; padding: 0 3px; }
 @media (prefers-color-scheme: dark) { mark { background-image: linear-gradient(100deg, transparent 2%, rgba(255,222,60,.45) 4%, rgba(255,222,60,.4) 96%, transparent 98%); } }
 
+/* ---------- depth ---------- */
+.lp { --px: 0; --py: 0; }
+.tilt3d { --rx: 0deg; --ry: 0deg; --rz: 0deg; --gl: 0; transform: perspective(900px) rotateX(var(--rx)) rotateY(var(--ry)) rotate(var(--rz)); transition: transform .25s cubic-bezier(.2,.8,.2,1), box-shadow .25s; transform-style: preserve-3d; will-change: transform; }
+.tilt3d:hover { box-shadow: 0 40px 50px -26px rgba(27,30,63,.55), 0 6px 12px rgba(27,30,63,.1) !important; }
+.tilt3d::selection { background: transparent; }
+.tilt3d > .glare { display: none; }
+h1, section h2, .end h2 { text-shadow: 1px 1px 0 var(--ex1), 2px 2px 0 var(--ex1), 3px 3px 0 var(--ex2), 4px 4px 0 var(--ex2), 5px 5px 0 var(--ex3), 6px 6px 0 var(--ex3), 10px 14px 18px rgba(27,30,63,.18); }
+:root { --ex1: #c9cdf2; --ex2: #b3b9ee; --ex3: #9aa2e6; }
+@media (prefers-color-scheme: dark) { :root { --ex1: #2a2f63; --ex2: #232856; --ex3: #1c2049; } }
+.hero h1 { transform: translate(calc(var(--px) * -10px), calc(var(--py) * -8px)); transition: transform .2s; }
+.heroArt { perspective: 1100px; }
+.heroArt > * { transform-style: preserve-3d; }
+.heroNote { transform: perspective(900px) rotateX(calc(var(--py) * -14deg)) rotateY(calc(var(--px) * 18deg)) var(--note-rot, rotate(0deg)) !important; }
+.pencil { position: absolute; width: 360px; left: 8%; bottom: 4%; transform: rotate(-14deg) translate(calc(var(--px) * 24px), calc(var(--py) * 18px)); filter: drop-shadow(10px 18px 10px rgba(27,30,63,.35)); z-index: 30; pointer-events: none; transition: transform .2s; }
+.paperclip { position: absolute; width: 34px; right: 6%; top: -2%; transform: rotate(18deg) translate(calc(var(--px) * -16px), calc(var(--py) * -12px)); filter: drop-shadow(4px 8px 4px rgba(27,30,63,.3)); z-index: 30; pointer-events: none; transition: transform .2s; }
+
 /* paper objects */
-.sticky { position: relative; color: #1B1E3F; padding: 28px 22px 22px; box-shadow: var(--shadow); }
-.sticky::after { content: ''; position: absolute; right: 0; bottom: 0; width: 34px; height: 34px; background: linear-gradient(135deg, rgba(0,0,0,0) 50%, rgba(0,0,0,.12) 50%, rgba(255,255,255,.35) 100%); }
-.tape { position: absolute; top: -12px; left: 50%; width: 92px; height: 26px; transform: translateX(-50%) rotate(-3deg); background: rgba(255,255,240,.62); box-shadow: 0 1px 2px rgba(0,0,0,.12); clip-path: polygon(3% 0, 97% 4%, 100% 30%, 96% 55%, 99% 100%, 2% 96%, 0 70%, 4% 45%, 0 15%); z-index: 2; backdrop-filter: blur(1px); }
+.sticky { position: relative; color: #1B1E3F; padding: 28px 22px 22px; box-shadow: 0 1px 1px rgba(0,0,0,.08), 0 24px 26px -20px rgba(27,30,63,.6); background-image: linear-gradient(170deg, rgba(255,255,255,.35), rgba(255,255,255,0) 40%, rgba(0,0,0,.06)) !important; background-blend-mode: soft-light; }
+.sticky::before { content: ''; position: absolute; left: 6%; right: 6%; bottom: 6px; height: 14px; box-shadow: 0 14px 14px rgba(27,30,63,.35); transform: perspective(200px) rotateX(30deg); z-index: -1; }
+.sticky::after { content: ''; position: absolute; right: 0; bottom: 0; width: 42px; height: 42px; background: linear-gradient(135deg, rgba(0,0,0,0) 50%, rgba(0,0,0,.18) 50%, rgba(255,255,255,.55) 78%, rgba(255,255,255,.2) 100%); box-shadow: -3px -3px 6px rgba(0,0,0,.08); }
+.tape { position: absolute; top: -12px; left: 50%; width: 92px; height: 26px; transform: translateX(-50%) rotate(-3deg) translateZ(20px); background: linear-gradient(180deg, rgba(255,255,255,.75), rgba(255,255,235,.55) 60%, rgba(230,226,200,.6)); box-shadow: 0 2px 3px rgba(0,0,0,.15); clip-path: polygon(3% 0, 97% 4%, 100% 30%, 96% 55%, 99% 100%, 2% 96%, 0 70%, 4% 45%, 0 15%); z-index: 2; backdrop-filter: blur(1px); }
 @media (prefers-color-scheme: dark) { .tape { background: rgba(255,255,240,.28); } }
-.indexCard { position: relative; background: var(--card); box-shadow: var(--shadow); background-image: linear-gradient(var(--card), var(--card)), repeating-linear-gradient(transparent 0 31px, rgba(80,120,230,.25) 31px 32px); background-size: 100% 46px, 100% 100%; background-repeat: no-repeat, repeat; border-top: 46px solid var(--card); }
+.indexCard { position: relative; background: var(--card); box-shadow: 0 2px 0 #e3e5ef, 0 4px 0 #d6d9e6, 0 30px 40px -22px rgba(27,30,63,.5); background-image: linear-gradient(var(--card), var(--card)), repeating-linear-gradient(transparent 0 31px, rgba(80,120,230,.25) 31px 32px); background-size: 100% 46px, 100% 100%; background-repeat: no-repeat, repeat; border-top: 46px solid var(--card); }
 .indexCard::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 2px; background: var(--red); opacity: .7; }
 
 .nav { display: flex; justify-content: space-between; align-items: center; padding: 14px clamp(16px, 4vw, 48px) 14px clamp(80px, 8vw, 110px); position: sticky !important; top: 0; background: color-mix(in srgb, var(--paper) 88%, transparent); backdrop-filter: blur(6px); z-index: 20 !important; }
@@ -470,15 +537,15 @@ section h2 { font-size: clamp(36px, 5.4vw, 70px); letter-spacing: -.045em; line-
 
 /* 1: syllabus + clipboard */
 .board { display: grid; grid-template-columns: 240px 1fr; gap: 44px; align-items: center; }
-.syllabus { position: relative; background: #fff; color: #1B1E3F; padding: 26px 20px 30px; box-shadow: var(--shadow); transform: rotate(-5deg); cursor: grab; transition: transform .2s, opacity .3s; }
-.syllabus:hover { transform: rotate(-2deg) translateY(-6px); }
+.syllabus { position: relative; background: #fff; color: #1B1E3F; padding: 26px 20px 30px; box-shadow: 0 2px 0 #eceef5, 0 4px 0 #e0e3ee, 0 6px 0 #d4d8e6, 0 30px 36px -18px rgba(27,30,63,.5); transform: perspective(800px) rotateX(10deg) rotate(-5deg); cursor: grab; transition: transform .2s, opacity .3s; }
+.syllabus:hover { transform: perspective(800px) rotateX(0deg) rotate(-2deg) translateY(-10px); box-shadow: 0 2px 0 #eceef5, 0 4px 0 #e0e3ee, 0 6px 0 #d4d8e6, 0 50px 50px -24px rgba(27,30,63,.55); }
 .syllabus.used { opacity: .3; transform: rotate(0) scale(.9); cursor: default; }
 .staple { position: absolute; left: 14px; top: 10px; width: 26px; height: 4px; background: linear-gradient(#bbb, #777); transform: rotate(-30deg); }
 .ptitle { font-family: var(--display); font-size: 24px; line-height: 1.05; margin: 8px 0 16px; }
 .ptitle small { font-family: var(--body); font-size: 13px; color: #6a6e90; }
 .line { height: 6px; background: #E3E5F0; margin: 11px 0; }
 .grab { position: absolute; right: -40px; bottom: -34px; font-size: 26px; color: var(--red); transform: rotate(-8deg); }
-.clipboard { position: relative; background: #B88A5A; padding: 46px 18px 18px; box-shadow: var(--shadow); background-image: repeating-linear-gradient(95deg, rgba(0,0,0,.04) 0 3px, transparent 3px 9px); }
+.clipboard { --rz: .6deg; position: relative; background: #B88A5A; box-shadow: 0 2px 0 #8a6239, 0 4px 0 #74512e, 0 40px 50px -26px rgba(27,30,63,.6) !important; padding: 46px 18px 18px; box-shadow: var(--shadow); background-image: repeating-linear-gradient(95deg, rgba(0,0,0,.04) 0 3px, transparent 3px 9px); }
 @media (prefers-color-scheme: dark) { .clipboard { background-color: #6B4F33; } }
 .clip { position: absolute; top: -14px; left: 50%; transform: translateX(-50%); width: 130px; height: 46px; background: linear-gradient(#d9dbe3, #9da1b3); box-shadow: 0 3px 6px rgba(0,0,0,.3); clip-path: polygon(12% 0, 88% 0, 100% 40%, 100% 100%, 0 100%, 0 40%); }
 .drop { min-height: 330px; background: var(--card); display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 22px; transition: background .15s, transform .15s; background-image: repeating-linear-gradient(transparent 0 29px, rgba(80,120,230,.18) 29px 30px); }
@@ -497,14 +564,14 @@ section h2 { font-size: clamp(36px, 5.4vw, 70px); letter-spacing: -.045em; line-
 .day { display: flex; flex-direction: column; gap: 7px; min-height: 160px; padding: 8px 5px; border-right: 1px dashed color-mix(in srgb, var(--ink) 35%, transparent); }
 .day:last-child { border-right: 0; }
 .day > span { font-family: var(--hand); font-size: 22px; color: var(--pen); text-align: center; }
-.due { color: #1B1E3F; font-size: 12.5px; padding: 8px 6px; line-height: 1.15; box-shadow: 0 6px 8px -5px rgba(0,0,0,.4); }
+.due { color: #1B1E3F; font-size: 12.5px; padding: 8px 6px; line-height: 1.15; box-shadow: 0 10px 10px -7px rgba(0,0,0,.5), inset 0 -3px 0 rgba(0,0,0,.08); }
 .sess { height: 10px; opacity: .8; }
 .pop { animation: pop .5s cubic-bezier(.3,1.7,.5,1) both; }
 @keyframes pop { from { transform: scale(.2) translateY(-40px) rotate(-25deg); opacity: 0; } }
 
 /* 2: tutor */
 .tutorDesk { display: grid; grid-template-columns: 260px 1fr; gap: 44px; align-items: start; max-width: 1040px; }
-.q { font-family: var(--hand); font-size: 36px; line-height: 1.05; transform: rotate(-4deg); min-height: 200px; display: flex; align-items: center; }
+.q { --rz: -4deg; font-family: var(--hand); font-size: 36px; line-height: 1.05; min-height: 200px; display: flex; align-items: center; }
 .indexCard .tabs { position: absolute; top: -84px; left: 18px; display: flex; gap: 6px; flex-wrap: wrap; }
 .tab { padding: 10px 16px 18px; font-size: 15px; color: #1B1E3F; box-shadow: 0 -2px 4px rgba(0,0,0,.08); transform: translateY(10px); transition: transform .15s; }
 .tab:hover { transform: translateY(4px); }
@@ -518,7 +585,7 @@ section h2 { font-size: clamp(36px, 5.4vw, 70px); letter-spacing: -.045em; line-
 
 /* 3: tear-off exam calendar + ruler */
 .examDesk { display: grid; grid-template-columns: auto 1fr; gap: clamp(30px, 6vw, 80px); align-items: center; }
-.deskCal { position: relative; width: clamp(230px, 26vw, 320px); background: var(--card); box-shadow: var(--shadow); padding-bottom: 18px; }
+.deskCal { --rz: -2deg; position: relative; width: clamp(230px, 26vw, 320px); background: var(--card); box-shadow: 0 3px 0 #dcdfea, 0 6px 0 #cdd1e0, 0 9px 0 #bfc3d6, 0 36px 44px -22px rgba(27,30,63,.55); padding-bottom: 18px; }
 .rings { position: absolute; top: -12px; left: 0; right: 0; display: flex; justify-content: space-around; z-index: 2; }
 .rings i { width: 10px; height: 26px; background: linear-gradient(90deg, #8a8ea6, #e3e5ee, #8a8ea6); border-radius: 5px !important; }
 .calTop { color: #fff; font-family: var(--display); letter-spacing: .14em; text-align: center; padding: 20px 0 12px; font-size: 22px; transition: background .3s; }
@@ -528,13 +595,13 @@ section h2 { font-size: clamp(36px, 5.4vw, 70px); letter-spacing: -.045em; line-
 .calUnit { font-family: var(--bold); letter-spacing: .3em; color: var(--muted); }
 .mood { font-size: clamp(44px, 5vw, 64px); line-height: 1; transition: color .3s; }
 .mood small { display: block; font-size: .5em; color: var(--muted); margin-top: 6px; }
-.ruler { margin: 28px 0 22px; padding: 14px 10px 30px; background: #F3E3A8; box-shadow: var(--shadow); transform: rotate(-1deg); background-image: repeating-linear-gradient(90deg, rgba(27,30,63,.7) 0 1.5px, transparent 1.5px 12px), repeating-linear-gradient(90deg, rgba(27,30,63,.8) 0 2px, transparent 2px 60px); background-size: 100% 12px, 100% 22px; background-position: 0 100%, 0 100%; background-repeat: repeat-x; }
+.ruler { --rz: -1deg; margin: 28px 0 22px; padding: 14px 10px 30px; background: #F3E3A8; box-shadow: 0 3px 0 #c9b46c, 0 20px 26px -14px rgba(27,30,63,.5); background-image: repeating-linear-gradient(90deg, rgba(27,30,63,.7) 0 1.5px, transparent 1.5px 12px), repeating-linear-gradient(90deg, rgba(27,30,63,.8) 0 2px, transparent 2px 60px); background-size: 100% 12px, 100% 22px; background-position: 0 100%, 0 100%; background-repeat: repeat-x; }
 @media (prefers-color-scheme: dark) { .ruler { background-color: #C9B87E; } }
 .ruler input { -webkit-appearance: none; appearance: none; width: 100%; height: 10px; background: transparent; cursor: pointer; }
 .ruler input::-webkit-slider-thumb { -webkit-appearance: none; width: 30px; height: 44px; background: var(--red); clip-path: polygon(0 0, 100% 0, 100% 70%, 50% 100%, 0 70%); cursor: grab; }
 .ruler input::-moz-range-thumb { width: 30px; height: 44px; background: var(--red); border: 0; }
 .blocks { display: flex; flex-wrap: wrap; gap: 8px; }
-.blocks div { width: 28px; height: 28px; box-shadow: 0 4px 6px -3px rgba(0,0,0,.4); animation: pop .35s cubic-bezier(.3,1.7,.5,1) both; }
+.blocks div { width: 28px; height: 28px; box-shadow: inset 0 -4px 0 rgba(0,0,0,.18), inset 0 2px 0 rgba(255,255,255,.5), 0 6px 8px -4px rgba(0,0,0,.45); animation: pop .35s cubic-bezier(.3,1.7,.5,1) both; }
 .tinyL { font-size: 24px; margin-top: 12px; }
 
 /* panic */
@@ -545,7 +612,7 @@ section h2 { font-size: clamp(36px, 5.4vw, 70px); letter-spacing: -.045em; line-
 .panic:hover { transform: translateY(-2px); }
 .panic:active { transform: translateY(12px); box-shadow: 0 2px 0 #7d1229, 0 8px 12px rgba(0,0,0,.35); }
 .panicNote { position: absolute; right: -40px; top: -20px; font-size: 28px; color: var(--red); transform: rotate(10deg); }
-.indexCard.plain { padding: 0 32px 32px; max-width: 620px; transform: rotate(1deg); }
+.indexCard.plain { --rz: 1deg; padding: 0 32px 32px; max-width: 620px; }
 .indexCard.plain h3 { font-size: clamp(30px, 3.6vw, 46px); letter-spacing: -.03em; margin: 0 0 8px; line-height: 1; }
 .big2 { font-size: 34px; margin: 0; }
 .handList { font-family: var(--hand); font-size: clamp(26px, 2.6vw, 32px); line-height: 32px; color: var(--pen); padding-left: 28px; margin: 6px 0 22px; }
@@ -556,7 +623,7 @@ section h2 { font-size: clamp(36px, 5.4vw, 70px); letter-spacing: -.045em; line-
 /* pricing */
 .plans { display: grid; grid-template-columns: 1fr 1fr; gap: 44px; max-width: 920px; }
 .plan { padding: 40px 32px 32px; display: flex; flex-direction: column; gap: 8px; transition: transform .25s cubic-bezier(.3,1.6,.5,1); }
-.plan:hover { transform: rotate(0deg) translateY(-6px) !important; }
+
 .planName { font-size: 32px; }
 .cost { font-size: 64px; letter-spacing: -.04em; line-height: 1; }
 .cost small { font-size: 20px; letter-spacing: 0; opacity: .7; font-family: var(--bold); }

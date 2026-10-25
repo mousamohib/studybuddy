@@ -32,9 +32,26 @@ export function Icon({ name, size = 20, color }: { name: IconName; size?: number
 }
 
 /** A pressable that gives a little squash when touched. */
-export function Pressy({ children, style, scaleTo = 0.97, onPress, haptics = true, ...rest }: PressableProps & { style?: StyleProp<ViewStyle>; scaleTo?: number; haptics?: boolean; children: ReactNode }) {
+export function Pressy({ children, style, scaleTo = 0.97, onPress, haptics = true, lift, ...rest }: PressableProps & { style?: StyleProp<ViewStyle>; scaleTo?: number; haptics?: boolean; lift?: boolean; children: ReactNode }) {
   const s = useSharedValue(1);
-  const a = useAnimatedStyle(() => ({ transform: [{ scale: s.value }] }));
+  const rx = useSharedValue(0), ry = useSharedValue(0), ty = useSharedValue(0);
+  const baseT = ((StyleSheet.flatten(style) ?? {}) as ViewStyle).transform;
+  const base = (Array.isArray(baseT) ? baseT : []) as { rotate?: string }[];
+  const baseRot = base.find((x) => x.rotate)?.rotate ?? '0deg';
+  const a = useAnimatedStyle(() => (lift
+    ? { transform: [{ perspective: 900 }, { translateY: ty.value }, { rotateX: `${rx.value}deg` }, { rotateY: `${ry.value}deg` }, { rotate: baseRot }, { scale: s.value }] }
+    : { transform: [...(base as never[]), { scale: s.value }] }));
+  const hoverProps = lift && Platform.OS === 'web' ? {
+    onHoverIn: () => { ty.value = withSpring(-6, { damping: 15 }); },
+    onHoverOut: () => { ty.value = withSpring(0); rx.value = withSpring(0); ry.value = withSpring(0); },
+    onPointerMove: (e: { nativeEvent: { offsetX?: number; offsetY?: number }; currentTarget: unknown }) => {
+      const el = e.currentTarget as unknown as HTMLElement; const r = el.getBoundingClientRect?.();
+      const ne = e.nativeEvent as unknown as { clientX: number; clientY: number };
+      if (!r) return;
+      ry.value = withTiming(((ne.clientX - r.left) / r.width - 0.5) * 12, { duration: 120 });
+      rx.value = withTiming(-((ne.clientY - r.top) / r.height - 0.5) * 10, { duration: 120 });
+    },
+  } : {};
   // Sizing in the parent's layout belongs on the outer touch area; the look goes on the animated inner view.
   const flat = (StyleSheet.flatten(style) ?? {}) as ViewStyle;
   const outer: ViewStyle = {}, inner: ViewStyle = { ...flat };
@@ -43,7 +60,7 @@ export function Pressy({ children, style, scaleTo = 0.97, onPress, haptics = tru
   }
   if (outer.flex || outer.flexGrow || outer.width) inner.flexGrow = 1;
   return (
-    <Pressable {...rest} style={outer} onPress={(e) => { if (haptics) haptic.tap(); onPress?.(e); }}
+    <Pressable {...rest} {...(hoverProps as object)} style={outer} onPress={(e) => { if (haptics) haptic.tap(); onPress?.(e); }}
       onPressIn={(e) => { s.value = withSpring(scaleTo, { damping: 18, stiffness: 420 }); rest.onPressIn?.(e); }}
       onPressOut={(e) => { s.value = withSpring(1, { damping: 14, stiffness: 300 }); rest.onPressOut?.(e); }}>
       <Animated.View style={[inner, a]}>{children}</Animated.View>
@@ -114,7 +131,7 @@ export function Button({ title, onPress, kind = 'primary', disabled, loading, st
         alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8,
         borderWidth: kind === 'secondary' ? 1.5 : 0, borderColor: tint(main, 0.5), opacity: disabled ? 0.45 : 1,
         // Website: ink slab with a hard shadow, like the front page.
-        ...(Platform.OS === 'web' && kind !== 'ghost' && kind !== 'soft' ? { boxShadow: `4px 4px 0 ${kind === 'highlight' ? t.text : t.danger}`, marginRight: 4, marginBottom: 4 } as object : {}),
+        ...(Platform.OS === 'web' && kind !== 'ghost' && kind !== 'soft' ? { boxShadow: `0 5px 0 ${kind === 'highlight' ? '#C9A300' : kind === 'danger' ? '#9c1d3d' : 'rgba(10,12,40,0.55)'}, 0 12px 16px -6px rgba(27,30,63,0.45), inset 0 1px 0 rgba(255,255,255,0.25)`, marginBottom: 5 } as object : {}),
       }, style]}>
       {loading ? <ActivityIndicator color={fg} /> : (
         <>
@@ -328,7 +345,7 @@ export function IconButton({ icon, onPress, color, bg, label, size = 40 }: { ico
 
 /** On the website, coloured blocks look like sticky notes: a slight tilt and a soft paper shadow. */
 export function useSlab(tilt = -0.6): ViewStyle {
-  return Platform.OS === 'web' ? ({ boxShadow: '0 18px 22px -14px rgba(27,30,63,0.5), 0 2px 3px rgba(27,30,63,0.08)', transform: [{ rotate: `${tilt}deg` }], marginTop: 10 } as ViewStyle) : {};
+  return Platform.OS === 'web' ? ({ boxShadow: '0 1px 1px rgba(0,0,0,0.08), 0 4px 0 rgba(0,0,0,0.06), 0 30px 34px -20px rgba(27,30,63,0.6)', transform: [{ rotate: `${tilt}deg` }], marginTop: 10 } as ViewStyle) : {};
 }
 
 /** A strip of sticky tape across the top of a block (website only). */

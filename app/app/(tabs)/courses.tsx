@@ -40,7 +40,7 @@ export default function Courses() {
           const next = c.deadlines.filter((d) => !d.done && daysUntil(d.due_at) >= 0).sort((a, b) => a.due_at.localeCompare(b.due_at))[0];
           const n = next ? daysUntil(next.due_at) : null;
           return (
-            <Pressy key={c.id} onPress={() => router.push({ pathname: '/course/[id]', params: { id: c.id } })}
+            <Pressy lift key={c.id} onPress={() => router.push({ pathname: '/course/[id]', params: { id: c.id } })}
               style={[{ flexGrow: 1, flexBasis: 160, minHeight: 190, backgroundColor: noteBg(col), borderRadius: radius.xl, padding: space.lg, justifyContent: 'space-between', overflow: Platform.OS === 'web' ? 'visible' : 'hidden' }, i % 2 ? slabB : slab]}>
               <Tape />
               {/* notebook spine */}

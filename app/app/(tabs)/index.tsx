@@ -106,7 +106,7 @@ export default function Today() {
   );
 
   const startBtn = nextUp ? (
-    <Pressy onPress={startNext} style={[{ flexDirection: 'row', alignItems: 'center', gap: space.md, backgroundColor: t.text, borderRadius: radius.xl, padding: space.lg, paddingRight: space.xl }, slab, Platform.OS === 'web' ? { boxShadow: `7px 7px 0 ${t.accent}` } as object : null]}>
+    <Pressy lift onPress={startNext} style={[{ flexDirection: 'row', alignItems: 'center', gap: space.md, backgroundColor: t.text, borderRadius: radius.xl, padding: space.lg, paddingRight: space.xl }, slab, Platform.OS === 'web' ? { boxShadow: `7px 7px 0 ${t.accent}` } as object : null]}>
       <View style={{ width: 54, height: 54, borderRadius: 27, backgroundColor: p.colourOf(nextUp.course), alignItems: 'center', justifyContent: 'center' }}>
         <Icon name={ic('play.fill', 'play_arrow')} size={28} color="#FFFFFF" />
       </View>
@@ -131,7 +131,7 @@ export default function Today() {
       {first && (() => {
         const code = codeOf(first.course_id), col = p.colourOf(code), n = daysUntil(first.due_at);
         return (
-          <Pressy onPress={() => router.push({ pathname: '/course/[id]', params: { id: first.course_id, section: 'deadlines' } })}
+          <Pressy lift onPress={() => router.push({ pathname: '/course/[id]', params: { id: first.course_id, section: 'deadlines' } })}
             style={[{ backgroundColor: noteBg(col), borderRadius: radius.xl, padding: space.xl, gap: space.md, overflow: Platform.OS === 'web' ? 'visible' : 'hidden' }, slab]}>
             <Tape />
             {Platform.OS !== 'web' && <View style={{ position: 'absolute', right: -40, top: -40, width: 180, height: 180, borderRadius: 90, backgroundColor: 'rgba(255,255,255,0.12)' }} />}
