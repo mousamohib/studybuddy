@@ -60,7 +60,7 @@ export default function Onboarding() {
         {step === 0 && (
           <>
             <T variant="display">Welcome{meta.display_name ? `, ${String(meta.display_name).split(' ')[0]}` : ''}</T>
-            <T muted style={{ fontSize: 17, lineHeight: 25 }}>Three quick questions so StudyBuddy fits how you study.</T>
+            <T muted style={{ fontSize: 17, lineHeight: 25 }}>Three quick questions so Scrawlie fits how you study.</T>
             <SchoolPicker value={school} onChange={setSchool} country={meta.country === 'GB' ? 'GB' : 'CA'} label="Where do you study?" />
             <T variant="small" muted>Optional. Not in the list? Just type the name.</T>
             <Button title="Next" onPress={() => setStep(1)} />
@@ -103,7 +103,7 @@ export default function Onboarding() {
             <Hours label="Weekends" value={weekend} set={setWeekend} color="#F0457E" />
             <Card tint={t.highlight} style={{ flexDirection: 'row', gap: space.md, alignItems: 'center' }}>
               <Icon name={ic('bell.fill', 'notifications')} size={22} color={t.dark ? t.highlight : '#8A6D00'} />
-              <T variant="small" style={{ flex: 1 }}>Next, StudyBuddy asks to send reminders: today's plan, deadlines and exam countdowns. Turn each off any time in your profile.</T>
+              <T variant="small" style={{ flex: 1 }}>Next, Scrawlie asks to send reminders: today's plan, deadlines and exam countdowns. Turn each off any time in your profile.</T>
             </Card>
             <Button title="Add my first course" icon={ic('plus', 'add')} onPress={() => finish(true)} loading={busy} />
             <Row style={{ flexWrap: 'nowrap' }}>

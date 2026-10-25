@@ -40,7 +40,7 @@ export default function Profile() {
   }
 
   async function toggleNotify(k: keyof Prof['notify'], v: boolean) {
-    if (v && !(await askNotificationPermission())) { notice('Notifications are off', 'Allow notifications for StudyBuddy in your phone settings.'); return; }
+    if (v && !(await askNotificationPermission())) { notice('Notifications are off', 'Allow notifications for Scrawlie in your phone settings.'); return; }
     update({ notify: { ...p!.notify, [k]: v } }, () => refreshPhoneSchedule());
   }
   async function toggleCalendar(v: boolean) {
@@ -56,7 +56,7 @@ export default function Profile() {
     const tables = ['profiles', 'courses', 'deadlines', 'materials', 'plans', 'chats', 'memory', 'documents'] as const;
     const out: Record<string, unknown> = {};
     for (const tb of tables) out[tb] = (await supabase.from(tb).select('*')).data;
-    await downloadMarkdown('StudyBuddy data export', '```json\n' + JSON.stringify(out, null, 2) + '\n```');
+    await downloadMarkdown('Scrawlie data export', '```json\n' + JSON.stringify(out, null, 2) + '\n```');
   }
 
   async function deleteAccount() {
@@ -153,7 +153,7 @@ export default function Profile() {
               <Row key={k} style={{ justifyContent: 'space-between' }}><T>{label}</T><Switch disabled={!native} value={p.notify?.[k] ?? false} onValueChange={(v) => toggleNotify(k, v)} trackColor={{ true: t.accent, false: t.border }} /></Row>
             ))}
             <Row style={{ justifyContent: 'space-between', flexWrap: 'nowrap' }}>
-              <View style={{ flex: 1 }}><T>Sync with my phone calendar</T><T variant="small" muted>Adds a "StudyBuddy" calendar with your plan and deadlines.</T></View>
+              <View style={{ flex: 1 }}><T>Sync with my phone calendar</T><T variant="small" muted>Adds a "Scrawlie" calendar with your plan and deadlines.</T></View>
               <Switch disabled={!native} value={p.calendar_sync} onValueChange={toggleCalendar} trackColor={{ true: t.accent, false: t.border }} />
             </Row>
           </Card>

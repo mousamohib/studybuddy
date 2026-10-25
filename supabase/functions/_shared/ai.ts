@@ -34,7 +34,7 @@ export async function checkAllowed(admin: SupabaseClient, uid: string, jobKey: s
   const budget = Number(Deno.env.get("AI_MONTHLY_BUDGET_USD") ?? 50);
   const { data: rows } = await admin.from("usage").select("cost_usd").eq("month", month);
   const spent = (rows ?? []).reduce((a: number, r: { cost_usd: number }) => a + Number(r.cost_usd), 0);
-  if (spent >= budget) throw new LimitError(503, "budget_reached", "StudyBuddy has hit its AI budget for this month. Try again later.");
+  if (spent >= budget) throw new LimitError(503, "budget_reached", "Scrawlie has hit its AI budget for this month. Try again later.");
   return plan;
 }
 

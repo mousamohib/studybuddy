@@ -5,6 +5,7 @@ import { ActivityIndicator, FlatList, KeyboardAvoidingView, Platform, Pressable,
 import Animated, { FadeInDown, useAnimatedStyle, useSharedValue, withDelay, withRepeat, withSequence, withTiming } from 'react-native-reanimated';
 import { useHeaderHeight } from 'expo-router/react-navigation';
 import { Rich } from '@/components/Rich';
+import { LogoMark } from '@/components/Logo';
 import { CourseTag, haptic, Icon, IconButton, ic, Pill, Pressy, Row, T, type IconName } from '@/components/ui';
 import { useMenu, useNotice } from '@/components/Menu';
 import { ApiError, ERROR_UPGRADE, pickDocuments, pickPhoto, streamTutor, uploadMaterial, waitMaterial, type ChatMessage, type Picked } from '@/lib/api';
@@ -234,10 +235,8 @@ export default function ChatScreen() {
         ) : (
           <View style={{ gap: 8 }}>
             <Row style={{ gap: 8 }}>
-              <View style={{ width: 26, height: 26, borderRadius: 8, backgroundColor: t.highlight, alignItems: 'center', justifyContent: 'center', transform: [{ rotate: '-6deg' }] }}>
-                <Text style={{ fontFamily: font.display, fontSize: 13, color: t.onHighlight }}>SB</Text>
-              </View>
-              <T variant="label" muted>StudyBuddy{item.shape ? ` · rewritten: ${RESHAPE_OPTIONS.find((r) => r.key === item.shape)?.label.toLowerCase()}` : ''}</T>
+              <LogoMark size={30} />
+              <T variant="label" muted>Scrawlie{item.shape ? ` · rewritten: ${RESHAPE_OPTIONS.find((r) => r.key === item.shape)?.label.toLowerCase()}` : ''}</T>
             </Row>
             <View style={{ paddingLeft: 34 }}>
               {item.live && !item.content ? <Dots color={accent} /> : <Rich text={item.content} fontSize={16} />}

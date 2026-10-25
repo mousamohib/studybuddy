@@ -26,7 +26,7 @@ async function post<T>(fn: string, body: unknown): Promise<T> {
   try {
     res = await fetch(`${base()}/${fn}`, { method: 'POST', headers: await headers(), body: JSON.stringify(body) });
   } catch {
-    throw new ApiError('network', "Couldn't reach StudyBuddy. Check your connection.");
+    throw new ApiError('network', "Couldn't reach Scrawlie. Check your connection.");
   }
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new ApiError(data.code ?? 'failed', data.message ?? 'Something went wrong. Try again.', data);
@@ -136,7 +136,7 @@ export async function streamTutor(body: StreamBody, onDelta: (textSoFar: string)
     res = await f(`${base()}/ai`, { method: 'POST', headers: await headers(), body: JSON.stringify(body), signal });
   } catch (e) {
     if ((e as Error).name === 'AbortError') throw new ApiError('cancelled', 'Stopped.');
-    throw new ApiError('network', "Couldn't reach StudyBuddy. Check your connection.");
+    throw new ApiError('network', "Couldn't reach Scrawlie. Check your connection.");
   }
   if (!res.ok) {
     const data = await res.json().catch(() => ({}));

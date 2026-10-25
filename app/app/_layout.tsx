@@ -68,7 +68,7 @@ function RootNav() {
             <Stack.Screen name="course/[id]" options={{ title: '' }} />
             <Stack.Screen name="chat/[id]" options={{ title: 'Chat' }} />
             <Stack.Screen name="doc/[id]" options={{ title: '' }} />
-            <Stack.Screen name="paywall" options={{ presentation: 'modal', title: 'StudyBuddy Pro' }} />
+            <Stack.Screen name="paywall" options={{ presentation: 'modal', title: 'Scrawlie Pro' }} />
           </Stack.Protected>
           <Stack.Protected guard={!!session && !onboarded}>
             <Stack.Screen name="onboarding" options={{ headerShown: false }} />
@@ -79,7 +79,7 @@ function RootNav() {
             <Stack.Screen name="sign-in" options={{ headerShown: false }} />
             {Platform.OS !== 'web' && <Stack.Screen name="welcome" options={{ headerShown: false }} />}
           </Stack.Protected>
-          <Stack.Screen name="s/[token]" options={{ title: 'Shared from StudyBuddy' }} />
+          <Stack.Screen name="s/[token]" options={{ title: 'Shared from Scrawlie' }} />
           <Stack.Screen name="legal" options={{ title: 'Legal' }} />
         </Stack>
       </MenuProvider>

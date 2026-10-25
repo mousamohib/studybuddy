@@ -29,7 +29,7 @@ blockquote{border-left:3px solid #2383E2;margin:8px 0;padding-left:10px;color:#5
 </head><body><h1>${esc(title)}</h1><p class="meta">${esc(subtitle)}</p>${body}</body></html>`;
 }
 
-const safeName = (s: string) => s.replace(/[^\w\- ]+/g, '').trim().replace(/\s+/g, '-') || 'StudyBuddy';
+const safeName = (s: string) => s.replace(/[^\w\- ]+/g, '').trim().replace(/\s+/g, '-') || 'Scrawlie';
 
 export async function downloadPdf(title: string, subtitle: string, markdown: string) {
   const html = toHtml(title, subtitle, markdown);

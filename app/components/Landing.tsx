@@ -117,7 +117,7 @@ export default function Landing({ onStart, onSignIn, onLegal }: Props) {
       {confetti > 0 && <Confetti key={confetti} />}
 
       <nav className="nav">
-        <div className="brand"><Mark size={28} /><span>StudyBuddy</span></div>
+        <div className="brand"><Mark size={40} /><span>Scrawlie</span></div>
         <div className="navr">
           <button className="link" onClick={() => onSignIn()}>Log in</button>
           <button className="btn small" onClick={() => onStart()}>Start free</button>
@@ -126,7 +126,7 @@ export default function Landing({ onStart, onSignIn, onLegal }: Props) {
 
       <header className="hero">
         <div className="heroText">
-          <p className="hand kicker">for uni + college students in Canada &amp; the UK ↓</p>
+          <p className="hand kicker"><Mark size={44} /> hi, I'm Scrawlie. I sort out uni + college in Canada &amp; the UK ↓</p>
           <h1>
             <span className="w">Your</span>{' '}<span className="w">whole</span>{' '}<span className="w">semester,</span>{' '}<span className="w auto">sorted.</span>
           </h1>
@@ -195,7 +195,7 @@ export default function Landing({ onStart, onSignIn, onLegal }: Props) {
                 <button key={k} className={`tab ${mode === k ? 'on' : ''}`} style={{ background: ANSWERS[k].col }} onClick={() => setMode(k)}>{ANSWERS[k].label}</button>
               ))}
             </div>
-            <div className="cardBody"><span className="sb">SB</span><p>{bold(typed)}<span className="caret" /></p></div>
+            <div className="cardBody"><span className="sb"><Mark size={38} /></span><p>{bold(typed)}<span className="caret" /></p></div>
           </div>
         </div>
       </section>
@@ -275,7 +275,7 @@ export default function Landing({ onStart, onSignIn, onLegal }: Props) {
       </section>
 
       <footer>
-        <div className="brand"><Mark size={20} /><span>StudyBuddy</span></div>
+        <div className="brand"><Mark size={30} /><span>Scrawlie</span></div>
         <span className="hand">made for students, by students</span>
         <div><button className="link" onClick={() => onLegal('privacy')}>Privacy</button><button className="link" onClick={() => onLegal('terms')}>Terms</button><button className="link" onClick={() => onSignIn()}>Log in</button></div>
       </footer>
@@ -457,10 +457,15 @@ function Clip() {
 
 function Mark({ size }: { size: number }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 100 100" aria-hidden>
-      <rect x="12" y="26" width="44" height="44" fill="#FFD43B" transform="rotate(-10 34 48)" />
-      <rect x="28" y="30" width="44" height="44" fill="#F0457E" transform="rotate(4 50 52)" />
-      <rect x="42" y="24" width="44" height="44" fill="#3442F5" transform="rotate(12 64 46)" />
+    <svg width={size} height={size} viewBox="0 0 100 100" aria-hidden className="mark">
+      <g transform="rotate(-6 50 52)">
+        <path d="M18 18h64v46L64 82H18z" fill="#FFD43B" />
+        <path d="M64 82l18-18H70a6 6 0 0 0-6 6z" fill="#E0B100" />
+        <rect x="40" y="12" width="22" height="10" fill="rgba(255,255,255,.75)" transform="rotate(-4 51 17)" />
+        <circle cx="38" cy="44" r="4.5" fill="#1B1E3F" />
+        <circle cx="60" cy="44" r="4.5" fill="#1B1E3F" />
+        <path d="M36 56q13 11 26 0" fill="none" stroke="#1B1E3F" strokeWidth="5" strokeLinecap="round" />
+      </g>
     </svg>
   );
 }
@@ -494,7 +499,12 @@ html, body { margin: 0; background: var(--paper); }
 .lp > *:not(.paperBg):not(.confetti):not(.holes) { position: relative; z-index: 1; }
 .holes { position: fixed; left: 20px; top: 0; bottom: 0; display: flex; flex-direction: column; justify-content: space-around; z-index: 1; pointer-events: none; }
 .holes i { width: 22px; height: 22px; border-radius: 50% !important; background: color-mix(in srgb, var(--ink) 10%, transparent); box-shadow: inset 0 2px 3px rgba(0,0,0,.25); }
-h1, h2, h3, .cost, .brand span, .planName { font-family: var(--display); font-weight: normal; }
+h1, h2, h3, .cost, .planName { font-family: var(--display); font-weight: normal; }
+.brand span { font-family: var(--hand); font-size: 1.55em; letter-spacing: 0; transform: rotate(-3deg); display: inline-block; line-height: 1; }
+.brand .mark { transition: transform .3s cubic-bezier(.3,1.6,.5,1); }
+.brand:hover .mark { transform: rotate(-12deg) scale(1.1); }
+.kicker .mark { vertical-align: -12px; margin-right: 4px; animation: wave 2.4s ease-in-out infinite; transform-origin: 50% 90%; }
+@keyframes wave { 0%, 60%, 100% { transform: rotate(0); } 70% { transform: rotate(-14deg); } 80% { transform: rotate(10deg); } 90% { transform: rotate(-6deg); } }
 b, strong, button, .due, mark { font-family: var(--bold); font-weight: normal; }
 .hand { font-family: var(--hand); font-weight: normal; color: var(--pen); }
 button { font-size: inherit; cursor: pointer; border: 0; background: none; color: inherit; }
@@ -647,7 +657,7 @@ section h2 { font-size: clamp(36px, 5.4vw, 70px); letter-spacing: -.045em; line-
 .tab.on { transform: translateY(0); }
 .cardBody { display: flex; gap: 14px; padding: 6px 26px 34px; min-height: 190px; }
 .indexCard { margin-top: 72px; }
-.sb { flex: none; width: 38px; height: 38px; background: #FFE45E; color: #1B1E3F; font-family: var(--display); display: grid; place-items: center; transform: rotate(-6deg); margin-top: 2px; }
+.sb { flex: none; width: 38px; height: 38px; display: grid; place-items: center; margin-top: 2px; }
 .cardBody p { margin: 0; font-size: clamp(20px, 2.3vw, 26px); line-height: 32px; }
 .caret { display: inline-block; width: 3px; height: 1em; background: var(--pen); vertical-align: -3px; margin-left: 3px; animation: blink 1s steps(2) infinite; }
 @keyframes blink { 50% { opacity: 0; } }

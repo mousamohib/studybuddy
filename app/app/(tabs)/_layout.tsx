@@ -5,6 +5,7 @@ import Animated, { LinearTransition } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button, Icon, Pressy, ic, type IconName } from '@/components/ui';
 import { useAccount } from '@/lib/auth';
+import { Wordmark } from '@/components/Logo';
 import { useWide } from '@/lib/useWide';
 import { font, radius, space, tint, useTheme } from '@/lib/theme';
 
@@ -58,11 +59,8 @@ function SideBar({ state, navigation }: BottomTabBarProps) {
   const { plan, trialEndsAt } = useAccount();
   return (
     <View style={{ width: 248, paddingHorizontal: space.lg, paddingVertical: space.xl, gap: space.xs, borderRightWidth: 2, borderColor: t.surface, backgroundColor: t.bg }}>
-      <Pressable onPress={() => router.navigate('/')} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: space.xl, paddingHorizontal: 8 }}>
-        <View style={{ width: 30, height: 26 }}>
-          {['#FFD43B', '#F0457E', '#3442F5'].map((c, i) => <View key={c} style={{ position: 'absolute', left: i * 6, top: i % 2 ? 3 : 0, width: 18, height: 18, borderRadius: 4, backgroundColor: c, transform: [{ rotate: `${[-10, 4, 12][i]}deg` }] }} />)}
-        </View>
-        <Text style={{ fontFamily: font.display, fontSize: 21, color: t.text, letterSpacing: -0.5 }}>StudyBuddy</Text>
+      <Pressable onPress={() => router.navigate('/')} style={{ marginBottom: space.xl, paddingHorizontal: 6 }}>
+        <Wordmark size={26} />
       </Pressable>
       {state.routes.map((r, i) => {
         const tab = TABS[r.name]; if (!tab) return null;

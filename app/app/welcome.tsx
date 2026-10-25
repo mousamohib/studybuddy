@@ -6,7 +6,7 @@ import Landing from '@/components/Landing';
 export default function Welcome() {
   return (
     <View style={{ flex: 1 }}>
-      <Stack.Screen options={{ headerShown: false, title: 'StudyBuddy: your semester, sorted' }} />
+      <Stack.Screen options={{ headerShown: false, title: 'Scrawlie: your semester, sorted' }} />
       <Landing
         onStart={() => router.push({ pathname: '/sign-in', params: { mode: 'up' } })}
         onSignIn={() => router.push({ pathname: '/sign-in', params: { mode: 'in' } })}

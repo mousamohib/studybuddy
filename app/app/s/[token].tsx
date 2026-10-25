@@ -13,11 +13,11 @@ export default function Shared() {
   if (doc === undefined) return <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}><ActivityIndicator /></View>;
   return (
     <Screen style={{ maxWidth: 820, width: '100%', alignSelf: 'center' }}>
-      <Stack.Screen options={{ title: doc?.title ?? 'StudyBuddy' }} />
+      <Stack.Screen options={{ title: doc?.title ?? 'Scrawlie' }} />
       {doc ? (
         <>
           <T variant="title">{doc.title}</T>
-          <T muted>{doc.course_code} · shared from StudyBuddy</T>
+          <T muted>{doc.course_code} · shared from Scrawlie</T>
           <DocView kind={doc.kind} body={doc.body} />
         </>
       ) : <Card><T variant="heading">This link doesn't work</T><T muted>It may have been turned off by the person who shared it.</T></Card>}

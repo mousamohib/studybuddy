@@ -31,7 +31,7 @@ export default function Courses() {
         {courses && courses.length > 0 && <Button title="Add" small icon={ic('plus', 'add')} onPress={add} />}
       </Row>
       {courses?.length === 0 && (
-        <Empty title="No courses yet" body="Add a course from its syllabus. StudyBuddy finds the deadlines and exams and builds your plan."
+        <Empty title="No courses yet" body="Add a course from its syllabus. Scrawlie finds the deadlines and exams and builds your plan."
           action={<Button title="Add a course" icon={ic('plus', 'add')} onPress={add} />} />
       )}
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.md }}>

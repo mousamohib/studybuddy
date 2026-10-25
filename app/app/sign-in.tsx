@@ -3,6 +3,7 @@ import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } fro
 import { router, useLocalSearchParams } from 'expo-router';
 import { Button, Card, Check, Field, LinkText, Row, Segments, Stickers, T } from '@/components/ui';
 import { isConfigured, supabase } from '@/lib/supabase';
+import { Wordmark } from '@/components/Logo';
 import { font, space, useTheme } from '@/lib/theme';
 
 // Email sign-in. Confirmation and password reset use a 6-digit code from the email, so they work
@@ -84,8 +85,7 @@ export default function SignIn() {
       <ScrollView contentContainerStyle={{ padding: space.lg, paddingTop: 64, paddingBottom: 48, gap: space.xl, maxWidth: 480, width: '100%', alignSelf: 'center' }} keyboardShouldPersistTaps="handled">
         <View style={{ gap: space.lg }}>
           {Platform.OS === 'web' && <View style={{ alignSelf: 'flex-start' }}><LinkText title="← Back" color={t.muted} onPress={() => (router.canGoBack() ? router.back() : router.replace('/welcome'))} /></View>}
-          <Stickers size={52} />
-          <Text style={{ fontFamily: font.display, fontSize: 46, lineHeight: 48, letterSpacing: -1.8, color: t.text }}>StudyBuddy</Text>
+          <Wordmark size={46} />
           {(mode === 'up' || mode === 'in') && <T muted style={{ fontSize: 17, lineHeight: 25 }}>Upload your syllabus and your semester sets itself up: deadlines, a daily study plan, a tutor that knows your course, and exam prep.</T>}
         </View>
 

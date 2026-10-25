@@ -110,7 +110,7 @@ export default function NewCourse() {
         <>
           <Stickers size={48} />
           <T variant="display">Start from the syllabus</T>
-          <T muted style={{ fontSize: 17, lineHeight: 25 }}>Upload the course outline. StudyBuddy finds every deadline and exam, what each covers, the exam rules and the AI policy. You check it all before anything is saved.</T>
+          <T muted style={{ fontSize: 17, lineHeight: 25 }}>Upload the course outline. Scrawlie finds every deadline and exam, what each covers, the exam rules and the AI policy. You check it all before anything is saved.</T>
           <Button title="Upload syllabus file" icon={ic('arrow.up.doc.fill', 'upload_file')} onPress={() => fromSyllabus(async () => (await pickDocuments()).slice(0, 1))} />
           <Button title="Take a photo of it" kind="soft" icon={ic('camera.fill', 'photo_camera')} onPress={() => fromSyllabus(() => pickPhoto(false))} />
           <Card flat style={{ flexDirection: 'row', alignItems: 'center', gap: space.md }}>

@@ -28,7 +28,7 @@ export default function DocScreen() {
   async function pdf() { try { const m = await downloadPdf(title, subtitle, doc!.body ?? ''); if (m) notice('Downloaded', m); } catch (e) { notice("Couldn't make the PDF", (e as Error).message); } }
   async function share() {
     const url = await shareLink(doc!.id, doc!.share_token, title).catch(() => null);
-    if (!url) { notice('Share links need the website', "They work once the StudyBuddy website is live. For now, share the PDF instead."); return; }
+    if (!url) { notice('Share links need the website', "They work once the Scrawlie website is live. For now, share the PDF instead."); return; }
     setDoc({ ...doc!, share_token: url.split('/').pop()! });
   }
 

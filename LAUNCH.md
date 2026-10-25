@@ -1,4 +1,4 @@
-# StudyBuddy launch checklist
+# Scrawlie launch checklist
 
 Status as of October 2026. Every core feature is built. What's left is mostly accounts, money and polish that only real use can finish.
 

@@ -39,11 +39,11 @@ export default function CalendarTab() {
   const codeOf = (id: string) => p.courses.find((c) => c.id === id)?.code ?? '';
 
   async function sync() {
-    if (Platform.OS === 'web') { notice('Calendar sync works in the phone app', 'Open StudyBuddy on your iPhone or Android phone to sync.'); return; }
+    if (Platform.OS === 'web') { notice('Calendar sync works in the phone app', 'Open Scrawlie on your iPhone or Android phone to sync.'); return; }
     if (!(await askCalendarPermission())) { notice('Calendar access is off', 'Allow calendar access in your phone settings to sync.'); return; }
     await supabase.from('profiles').update({ calendar_sync: true }).not('id', 'is', null);
     await refreshPhoneSchedule();
-    notice('Synced', 'Your plan and deadlines are in a "StudyBuddy" calendar on your phone. It stays in sync as your plan changes.');
+    notice('Synced', 'Your plan and deadlines are in a "Scrawlie" calendar on your phone. It stays in sync as your plan changes.');
   }
 
   return (
@@ -99,7 +99,7 @@ export default function CalendarTab() {
       {!selSessions.length && !selDue.length && <Card flat><T muted>{daysUntil(sel) < 0 ? 'Nothing was planned.' : 'Nothing planned. A rest day.'}</T></Card>}
       <Card style={{ gap: space.md }}>
         <T variant="heading">Phone calendar</T>
-        <T variant="small" muted>Put your plan and deadlines in a "StudyBuddy" calendar on your phone, next to your classes. Your other events are read so the planner leaves room for them.</T>
+        <T variant="small" muted>Put your plan and deadlines in a "Scrawlie" calendar on your phone, next to your classes. Your other events are read so the planner leaves room for them.</T>
         <Button title="Sync with my calendar" kind="soft" icon={ic('arrow.triangle.2.circlepath', 'sync')} onPress={sync} />
       </Card>
     </Screen>

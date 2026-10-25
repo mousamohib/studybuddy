@@ -66,7 +66,7 @@ export default function Paywall() {
       </View>
 
       {plan === 'pro' && !trialEndsAt ? (
-        <Card tint={t.good}><Row><Icon name={ic('checkmark.seal.fill', 'verified')} color={t.good} /><T variant="strong">You're on Pro. Thanks for supporting StudyBuddy.</T></Row></Card>
+        <Card tint={t.good}><Row><Icon name={ic('checkmark.seal.fill', 'verified')} color={t.good} /><T variant="strong">You're on Pro. Thanks for supporting Scrawlie.</T></Row></Card>
       ) : (
         <View style={{ gap: space.md }}>
           <Row style={{ flexWrap: 'nowrap', gap: space.md, paddingTop: 8 }}>

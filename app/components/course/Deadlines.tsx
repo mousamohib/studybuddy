@@ -98,7 +98,7 @@ export function Deadlines({ data }: { data: CourseData }) {
       ) : paste !== null ? (
         <Card style={{ gap: space.md }}>
           <T variant="heading">Paste a message from your professor</T>
-          <T variant="small" muted>An email or announcement about an exam, a new deadline or a change. StudyBuddy works out what changes and asks before applying it.</T>
+          <T variant="small" muted>An email or announcement about an exam, a new deadline or a change. Scrawlie works out what changes and asks before applying it.</T>
           <Field value={paste} onChangeText={setPaste} multiline style={{ minHeight: 140, textAlignVertical: 'top' }} placeholder="Midterm 1 is on Wednesday Oct 21 at 11:30…" />
           <Row><Button title="Read it" onPress={readAnnouncement} loading={reading} /><Button title="Cancel" kind="ghost" onPress={() => setPaste(null)} /></Row>
         </Card>

@@ -8,7 +8,7 @@ export type Session = { id: string; course: string; title: string; minutes: numb
 export type PlanDay = { date: string; sessions: Session[] };
 type Deadline = { id: string; kind: string; label: string | null; due_at: string; done: boolean; course_id: string; calendar_event_id: string | null };
 
-const CAL_TITLE = 'StudyBuddy';
+const CAL_TITLE = 'Scrawlie';
 
 if (Platform.OS !== 'web') {
   Notifications.setNotificationHandler({
@@ -81,7 +81,7 @@ async function studyCalendarId(): Promise<string> {
   });
 }
 
-/** Writes deadlines and the next 14 days of sessions into a "StudyBuddy" calendar on the phone. */
+/** Writes deadlines and the next 14 days of sessions into a "Scrawlie" calendar on the phone. */
 export async function syncCalendar(days: PlanDay[], deadlines: (Deadline & { code: string })[]) {
   if (Platform.OS === 'web') return 0;
   const calId = await studyCalendarId();
@@ -101,7 +101,7 @@ export async function syncCalendar(days: PlanDay[], deadlines: (Deadline & { cod
     for (const s of day.sessions) {
       const startAt = cursor, endAt = new Date(cursor.getTime() + s.minutes * 60000);
       if (endAt < new Date()) { cursor = endAt; continue; }
-      await Calendar.createEventAsync(calId, { title: `${s.course}: ${s.title}`, startDate: startAt, endDate: endAt, notes: 'Planned by StudyBuddy' });
+      await Calendar.createEventAsync(calId, { title: `${s.course}: ${s.title}`, startDate: startAt, endDate: endAt, notes: 'Planned by Scrawlie' });
       cursor = new Date(endAt.getTime() + 10 * 60000); n++;
     }
   }

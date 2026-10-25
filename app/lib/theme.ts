@@ -1,4 +1,4 @@
-// StudyBuddy look: a student's desk. Ink-blue pen for actions, highlighter colours for courses,
+// Scrawlie look: a student's desk. Ink-blue pen for actions, highlighter colours for courses,
 // Bricolage Grotesque for headings, Figtree for reading. Every screen takes colours from here.
 import { Platform } from 'react-native';
 import { useColorScheme } from '@/components/useColorScheme';

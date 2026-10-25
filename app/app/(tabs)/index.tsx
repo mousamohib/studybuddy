@@ -121,7 +121,7 @@ export default function Today() {
     return (
       <Screen>
         {header}
-        <Empty title="Set up your semester" body="Add your first course from its syllabus. StudyBuddy finds the deadlines and exams and builds your study plan."
+        <Empty title="Set up your semester" body="Add your first course from its syllabus. Scrawlie finds the deadlines and exams and builds your study plan."
           action={<Button title="Add a course" icon={ic('plus', 'add')} onPress={() => router.push('/course/new')} />} />
       </Screen>
     );

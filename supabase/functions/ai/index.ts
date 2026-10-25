@@ -70,7 +70,7 @@ ${pb.is_group ? "Focus help on the student's own part. Use teammates' parts only
   const mats = await materialsText(admin, user.id, chat.material_ids ?? [], chat.mode === "assignment" ? 110_000 : 140_000);
   const facts = (memory ?? []).filter((m: { kind: string }) => m.kind === "fact").map((m: { text: string }) => `- ${m.text}`).join("\n");
 
-  const system = `You are StudyBuddy, a study tutor inside a student app${c ? `, in the student's ${c.code} workspace` : ""}. Today is ${todayKey}.
+  const system = `You are Scrawlie, a study tutor inside a student app${c ? `, in the student's ${c.code} workspace` : ""}. Today is ${todayKey}.
 ${rulesBlock(profile as Profile, c, chat.style, chat.modifier ? MODIFIER_TEXT[chat.modifier] ?? chat.modifier : null)}
 
 # ${c ? `${c.code} memory` : "Memory"} (keep in mind)
