@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from 'react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { Button, Card, Check, Field, LinkText, Row, Segments, Stickers, T } from '@/components/ui';
 import { isConfigured, supabase } from '@/lib/supabase';
 import { font, space, useTheme } from '@/lib/theme';
@@ -11,7 +11,8 @@ type Mode = 'up' | 'in' | 'confirm' | 'forgot' | 'reset';
 
 export default function SignIn() {
   const t = useTheme();
-  const [mode, setMode] = useState<Mode>('up');
+  const params = useLocalSearchParams<{ mode?: string }>();
+  const [mode, setMode] = useState<Mode>(params.mode === 'in' ? 'in' : 'up');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
@@ -82,6 +83,7 @@ export default function SignIn() {
     <KeyboardAvoidingView style={{ flex: 1, backgroundColor: t.bg }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={{ padding: space.lg, paddingTop: 64, paddingBottom: 48, gap: space.xl, maxWidth: 480, width: '100%', alignSelf: 'center' }} keyboardShouldPersistTaps="handled">
         <View style={{ gap: space.lg }}>
+          {Platform.OS === 'web' && <View style={{ alignSelf: 'flex-start' }}><LinkText title="← Back" color={t.muted} onPress={() => (router.canGoBack() ? router.back() : router.replace('/welcome'))} /></View>}
           <Stickers size={52} />
           <Text style={{ fontFamily: font.display, fontSize: 46, lineHeight: 48, letterSpacing: -1.8, color: t.text }}>StudyBuddy</Text>
           {(mode === 'up' || mode === 'in') && <T muted style={{ fontSize: 17, lineHeight: 25 }}>Upload your syllabus and your semester sets itself up: deadlines, a daily study plan, a tutor that knows your course, and exam prep.</T>}

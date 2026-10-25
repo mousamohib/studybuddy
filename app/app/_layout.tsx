@@ -10,7 +10,7 @@ import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
-import { AppState } from 'react-native';
+import { AppState, Platform } from 'react-native';
 import 'react-native-reanimated';
 
 import { MenuProvider } from '@/components/Menu';
@@ -73,7 +73,10 @@ function RootNav() {
             <Stack.Screen name="onboarding" options={{ headerShown: false }} />
           </Stack.Protected>
           <Stack.Protected guard={!session}>
+            {/* On the website, visitors land on the front page first; the phone app opens on sign-in. */}
+            {Platform.OS === 'web' && <Stack.Screen name="welcome" options={{ headerShown: false }} />}
             <Stack.Screen name="sign-in" options={{ headerShown: false }} />
+            {Platform.OS !== 'web' && <Stack.Screen name="welcome" options={{ headerShown: false }} />}
           </Stack.Protected>
           <Stack.Screen name="s/[token]" options={{ title: 'Shared from StudyBuddy' }} />
           <Stack.Screen name="legal" options={{ title: 'Legal' }} />
