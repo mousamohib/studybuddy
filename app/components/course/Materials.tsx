@@ -4,6 +4,7 @@ import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 import { Button, Card, Field, Icon, ic, LinkText, Pill, Pressy, Row, Segments, T, useAccent } from '@/components/ui';
 import { useMenu, useNotice } from '@/components/Menu';
 import { DateField } from '@/components/DateField';
+import { GroupProject } from './GroupProject';
 import { ApiError, deleteMaterial, ERROR_UPGRADE, pickDocuments, pickPhoto, uploadMaterial, type Picked } from '@/lib/api';
 import { fmtDay, isAssignment, KIND_LABEL, localToISO, type Deadline, type Material } from '@/lib/data';
 import { supabase } from '@/lib/supabase';
@@ -143,10 +144,12 @@ export function Materials({ data }: { data: CourseData }) {
 
 function AssignmentInfo({ d }: { d: Deadline }) {
   return (
-    <Card flat style={{ gap: 4 }}>
-      <T variant="label" muted>About this assignment</T>
-      <T>{d.covers || 'No description yet. Edit it in Deadlines.'}</T>
-      <T variant="small" muted>Group projects and "my part" memory arrive in a later version.</T>
-    </Card>
+    <View style={{ gap: space.sm }}>
+      <Card flat style={{ gap: 4 }}>
+        <T variant="label" muted>About this assignment</T>
+        <T>{d.covers || 'No description yet. Edit it in Deadlines.'}</T>
+      </Card>
+      <GroupProject d={d} />
+    </View>
   );
 }

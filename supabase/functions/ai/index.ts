@@ -53,6 +53,18 @@ Deno.serve(async (req) => {
       ? `# What has been taught in ${c.code}\n${taught.map((m: { file_name: string; outline: Outline }) => `- ${m.file_name}\n${outlineText(m.outline)}`).join("\n") || "(no lecture material uploaded yet)"}\nFor this assignment, only use concepts and techniques from the taught material above or the assignment's own files. If the task seems to need something beyond that, say so and point to the closest taught topic.`
       : `# Syllabus\nThe ${c.code} study materials are the syllabus for its tests${taught.length ? `: ${taught.map((m: { file_name: string }) => m.file_name).join(", ")}` : ""}. Keep teaching and practice within that scope unless asked to go further.`;
   }
+  // Group project memory for assignment chats: who does what, the student's part, progress so far.
+  let project = "";
+  if (dl) {
+    const { data: pb } = await admin.from("project_briefs").select("is_group, role, brief").eq("deadline_id", dl.id).eq("user_id", user.id).maybeSingle();
+    const b = (pb?.brief ?? {}) as { members?: { name: string; part: string }[]; log?: { date: string; text: string }[]; notes?: string };
+    if (pb) {
+      project = `# ${pb.is_group ? "Group project" : "Project"} memory
+${pb.is_group ? `Team:\n${(b.members ?? []).map((m) => `- ${m.name}: ${m.part || "(part not set)"}`).join("\n") || "(not set)"}\n` : ""}The student's part: ${pb.role || "(not set; ask once if it matters)"}
+${b.notes ? `Notes: ${b.notes}\n` : ""}Progress so far:\n${(b.log ?? []).slice(-15).map((l) => `- ${l.date}: ${l.text}`).join("\n") || "(nothing logged yet)"}
+${pb.is_group ? "Focus help on the student's own part. Use teammates' parts only to keep interfaces and integration consistent. " : ""}When the student reports progress or a decision on this project, end your reply with [[progress: short note]].`;
+    }
+  }
   const todayKey = new Date().toISOString().slice(0, 10);
   const todays = ((plan?.days ?? []) as { date: string; sessions: { id: string; course: string; title: string; minutes: number }[] }[]).find((d) => d.date === todayKey)?.sessions ?? [];
   const mats = await materialsText(admin, user.id, chat.material_ids ?? [], chat.mode === "assignment" ? 110_000 : 140_000);
@@ -72,6 +84,7 @@ ${todays.map((s) => `- ${s.course}: ${s.title} (${s.minutes} min)`).join("\n") |
 ${dl ? `\n# This chat is about: ${codeOf(dl.course_id)} ${dl.kind}${dl.label ? ` ${dl.label}` : ""}, due ${dl.due_at.slice(0, 10)}${dl.covers ? `. ${dl.covers}` : ""}` : ""}
 ${chat.mode === "lesson" ? "\n# Mode: teach a topic in full, following the teaching rules." : chat.mode === "practice" ? "\n# Mode: practice. Give questions first; hold worked solutions until the student answers or asks." : chat.mode === "coding" ? "\n# Mode: coding practice. Short recap, one worked example, then exercises of increasing difficulty with hints; full solutions only on request." : chat.mode === "assignment" ? "\n# Mode: assignment help." : ""}
 ${scope}
+${project}
 ${mats ? `\n# Course materials for this chat ([p. N] / [slide N] markers are page numbers: use them only to name the source once)\n${mats}` : ""}
 
 # Remembering things
@@ -135,7 +148,15 @@ Markdown. All maths in LaTeX: $…$ inline, $$…$$ on its own line. Code in fen
         saved.push(kind === "revisit" ? `Revisit later: ${fact}` : fact);
       }
       if (rows.length) await admin.from("memory").insert(rows);
-      const clean = text.replace(/\[\[(remember|revisit):[\s\S]*?(\]\]|$)/gi, "").trimEnd();
+      const progress = [...text.matchAll(/\[\[progress:\s*([\s\S]*?)\]\]/gi)].map((m) => m[1].trim().slice(0, 300)).filter(Boolean);
+      if (progress.length && chat.deadline_id) {
+        const { data: pb } = await admin.from("project_briefs").select("brief").eq("deadline_id", chat.deadline_id).eq("user_id", user.id).maybeSingle();
+        const brief = (pb?.brief ?? {}) as { log?: { date: string; text: string }[] };
+        const log = [...(brief.log ?? []), ...progress.map((p) => ({ date: new Date().toISOString().slice(0, 10), text: p }))].slice(-60);
+        await admin.from("project_briefs").upsert({ deadline_id: chat.deadline_id, user_id: user.id, brief: { ...brief, log }, updated_at: new Date().toISOString() });
+        saved.push(...progress.map((p) => `Project progress: ${p}`));
+      }
+      const clean = text.replace(/\[\[(remember|revisit|progress):[\s\S]*?(\]\]|$)/gi, "").trimEnd();
 
       let msgs: ChatMsg[], message: ChatMsg;
       if (mode === "reshape") {
