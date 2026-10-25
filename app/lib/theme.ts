@@ -1,5 +1,6 @@
 // StudyBuddy look: a student's desk. Ink-blue pen for actions, highlighter colours for courses,
 // Bricolage Grotesque for headings, Figtree for reading. Every screen takes colours from here.
+import { Platform } from 'react-native';
 import { useColorScheme } from '@/components/useColorScheme';
 
 const light = {
@@ -38,11 +39,32 @@ const dark: typeof light = {
   overlay: 'rgba(0,0,0,0.6)',
 };
 
-export type Theme = typeof light & { dark: boolean };
-export const themes = { light, dark };
+// Website: the green cutting-mat desk from the front page. Paper things (sticky notes, cards) sit on top.
+const mat: typeof light = {
+  bg: '#1F4F46',
+  surface: 'rgba(255,255,255,0.09)',
+  card: '#1F4F46',
+  text: '#F4F5FF',
+  muted: 'rgba(244,245,255,0.7)',
+  border: 'rgba(255,255,255,0.14)',
+  accent: '#FFE45E',
+  accentSoft: 'rgba(255,228,94,0.16)',
+  onAccent: '#1B1E3F',
+  highlight: '#FFE45E',
+  onHighlight: '#1B1E3F',
+  danger: '#FF7AA8',
+  good: '#7BE3B8',
+  warn: '#FFB04A',
+  overlay: 'rgba(5,20,17,0.6)',
+};
 
+export type Theme = typeof light & { dark: boolean };
+export const themes = Platform.OS === 'web' ? { light: mat, dark: mat } : { light, dark };
+
+const WEB = Platform.OS === 'web';
 export function useTheme(): Theme {
   const d = useColorScheme() === 'dark';
+  if (WEB) return { ...mat, dark: true };
   return { ...(d ? dark : light), dark: d };
 }
 

@@ -31,7 +31,15 @@ const NOTES = [
 
 const bold = (s: string) => s.split('**').map((p, i) => (i % 2 ? <mark key={i}>{p}</mark> : <span key={i}>{p}</span>));
 
+type Desk = 'paper' | 'mat' | 'navy' | 'blue';
+const DEFAULT_DESK: Desk = 'mat';
+const pickDesk = (): Desk => {
+  try { const q = new URLSearchParams(window.location.search).get('desk'); if (q === 'paper' || q === 'mat' || q === 'navy' || q === 'blue') return q; } catch { /* no window during build */ }
+  return DEFAULT_DESK;
+};
+
 export default function Landing({ onStart, onSignIn, onLegal }: Props) {
+  const [desk] = useState<Desk>(pickDesk);
   const [stage, setStage] = useState<'idle' | 'over' | 'reading' | 'found' | 'planned'>('idle');
   const [shown, setShown] = useState(0);
   const [mode, setMode] = useState<keyof typeof ANSWERS>('simple');
@@ -102,9 +110,9 @@ export default function Landing({ onStart, onSignIn, onLegal }: Props) {
   function hitPanic() { setPanic((p) => p + 1); setShaking(true); later(500, () => setShaking(false)); }
 
   return (
-    <div className={`lp ${shaking ? 'shake' : ''}`} ref={scroller}>
+    <div className={`lp desk-${desk} ${shaking ? 'shake' : ''}`} ref={scroller}>
       <style>{CSS}</style>
-      <Paper scroller={scroller} />
+      <Paper scroller={scroller} desk={desk} />
       <div className="holes" aria-hidden><i /><i /><i /></div>
       {confetti > 0 && <Confetti key={confetti} />}
 
@@ -288,7 +296,7 @@ function Head({ n, title, note }: { n: string; title: string; note: string }) {
 function Tape() { return <i className="tape" aria-hidden />; }
 
 /** Notebook paper behind everything: ruled lines that ripple near the pointer, plus a fading highlighter stroke. */
-function Paper({ scroller }: { scroller: RefObject<HTMLDivElement | null> }) {
+function Paper({ scroller, desk }: { scroller: RefObject<HTMLDivElement | null>; desk: Desk }) {
   const ref = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
     const cv = ref.current; if (!cv) return;
@@ -308,27 +316,61 @@ function Paper({ scroller }: { scroller: RefObject<HTMLDivElement | null> }) {
       const now = performance.now(), d = dark();
       const off = (scroller.current?.scrollTop ?? 0) % L;
       ctx.clearRect(0, 0, w, h);
-      ctx.lineWidth = 1.2;
-      ctx.strokeStyle = d ? 'rgba(130,150,255,0.16)' : 'rgba(80,120,230,0.22)';
-      for (let y = L * 2 - off; y < h + L; y += L) {
-        ctx.beginPath();
-        for (let x = 0; x <= w; x += 12) {
-          const dist = Math.hypot(x - mx, y - my);
-          const bump = still || dist > 140 ? 0 : Math.sin((dist / 140) * Math.PI) * (1 - dist / 140) * 12 * Math.sign(y - my || 1);
-          x === 0 ? ctx.moveTo(x, y + bump) : ctx.lineTo(x, y + bump);
+      const ripple = (x: number, y: number, axis: 'x' | 'y') => {
+        const dist = Math.hypot(x - mx, y - my);
+        if (still || dist > 150) return 0;
+        return Math.sin((dist / 150) * Math.PI) * (1 - dist / 150) * 12 * Math.sign((axis === 'y' ? y - my : x - mx) || 1);
+      };
+      const hLines = (col: string, every = 1, major?: string) => {
+        let i = 0;
+        for (let y = L * 2 - off; y < h + L; y += L, i++) {
+          ctx.strokeStyle = major && i % 5 === 0 ? major : col;
+          ctx.beginPath();
+          for (let x = 0; x <= w; x += 12) { const b = ripple(x, y, 'y'); x === 0 ? ctx.moveTo(x, y + b) : ctx.lineTo(x, y + b); }
+          ctx.stroke();
+          if (every > 1) i += every - 1;
         }
-        ctx.stroke();
+      };
+      const vLines = (col: string, major?: string) => {
+        let i = 0;
+        for (let x = 0; x < w + L; x += L, i++) {
+          ctx.strokeStyle = major && i % 5 === 0 ? major : col;
+          ctx.beginPath();
+          for (let y = -L; y <= h + L; y += 12) { const yy = y - off; const b = ripple(x, yy, 'x'); y === -L ? ctx.moveTo(x + b, yy) : ctx.lineTo(x + b, yy); }
+          ctx.stroke();
+        }
+      };
+      ctx.lineWidth = 1.2;
+      if (desk === 'paper') {
+        hLines(d ? 'rgba(130,150,255,0.16)' : 'rgba(80,120,230,0.22)');
+        const m = w < 600 ? 26 : 64;
+        ctx.strokeStyle = d ? 'rgba(255,107,139,0.35)' : 'rgba(229,56,95,0.45)';
+        ctx.lineWidth = 1.5;
+        [m, m + 4].forEach((x) => { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke(); });
+      } else if (desk === 'mat') {
+        // self-healing cutting mat: fine grid, brighter every 5th line, a diagonal guide
+        hLines('rgba(255,255,255,0.07)', 1, 'rgba(255,255,255,0.16)');
+        vLines('rgba(255,255,255,0.07)', 'rgba(255,255,255,0.16)');
+        ctx.strokeStyle = 'rgba(255,228,94,0.22)'; ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.moveTo(0, h * 0.95 - off * 0); ctx.lineTo(w, h * 0.05); ctx.stroke();
+      } else if (desk === 'navy') {
+        // dot paper: dots swell near the pointer
+        for (let y = L - off; y < h + L; y += L) for (let x = L / 2; x < w; x += L) {
+          const dist = Math.hypot(x - mx, y - my), r = still || dist > 160 ? 1.6 : 1.6 + (1 - dist / 160) * 4;
+          ctx.fillStyle = dist < 160 ? `rgba(255,228,94,${0.25 + (1 - dist / 160) * 0.6})` : 'rgba(255,255,255,0.16)';
+          ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
+        }
+      } else {
+        // blueprint grid
+        hLines('rgba(255,255,255,0.08)', 1, 'rgba(255,255,255,0.2)');
+        vLines('rgba(255,255,255,0.08)', 'rgba(255,255,255,0.2)');
       }
-      const m = w < 600 ? 26 : 64;
-      ctx.strokeStyle = d ? 'rgba(255,107,139,0.35)' : 'rgba(229,56,95,0.45)';
-      ctx.lineWidth = 1.5;
-      [m, m + 4].forEach((x) => { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke(); });
       while (pts.length && now - pts[0].t > 1000) pts.shift();
       if (!still && pts.length > 1) {
-        ctx.lineCap = 'butt'; ctx.lineJoin = 'round'; ctx.globalCompositeOperation = d ? 'source-over' : 'multiply';
+        ctx.lineCap = 'butt'; ctx.lineJoin = 'round'; ctx.globalCompositeOperation = desk === 'paper' && !d ? 'multiply' : 'source-over';
         for (let i = 1; i < pts.length; i++) {
           const a = 1 - (now - pts[i].t) / 1000;
-          ctx.strokeStyle = `rgba(255,222,60,${(d ? 0.32 : 0.6) * a})`;
+          ctx.strokeStyle = `rgba(255,222,60,${(desk !== 'paper' ? 0.42 : d ? 0.32 : 0.6) * a})`;
           ctx.lineWidth = 24;
           ctx.beginPath(); ctx.moveTo(pts[i - 1].x, pts[i - 1].y); ctx.lineTo(pts[i].x, pts[i].y); ctx.stroke();
         }
@@ -338,7 +380,7 @@ function Paper({ scroller }: { scroller: RefObject<HTMLDivElement | null> }) {
     };
     draw();
     return () => { cancelAnimationFrame(raf); window.removeEventListener('pointermove', pm); window.removeEventListener('resize', size); };
-  }, [scroller]);
+  }, [scroller, desk]);
   return <canvas ref={ref} className="paperBg" aria-hidden />;
 }
 
@@ -470,6 +512,33 @@ button:focus-visible, input:focus-visible { outline: 3px dashed var(--red); outl
 .btn.dark { color: #FFE45E; }
 mark { background: linear-gradient(100deg, transparent 2%, rgba(255,222,60,.9) 4%, rgba(255,222,60,.75) 96%, transparent 98%); background-size: 100% 60%; background-position: 0 70%; background-repeat: no-repeat; color: inherit; padding: 0 3px; }
 @media (prefers-color-scheme: dark) { mark { background-image: linear-gradient(100deg, transparent 2%, rgba(255,222,60,.45) 4%, rgba(255,222,60,.4) 96%, transparent 98%); } }
+
+/* ---------- desks: the surface everything sits on ---------- */
+.lp.desk-mat, .lp.desk-navy, .lp.desk-blue { --ink: #F4F5FF; --muted: rgba(244,245,255,.72); --pen: #FFE45E; --red: #FF7AA8; --card: #FFFFFF; --soft: rgba(255,255,255,.1); }
+.lp.desk-mat { --paper: #1F4F46; --ex1: #173d36; --ex2: #12322c; --ex3: #0d2722; background: radial-gradient(ellipse at 30% 0%, #2a6a5d, #1F4F46 55%, #173d36); }
+.lp.desk-navy { --paper: #151936; --ex1: #0f1229; --ex2: #0b0e21; --ex3: #080a19; background: radial-gradient(ellipse at 30% 0%, #222868, #151936 55%, #0f1229); }
+.lp.desk-blue { --paper: #2C38D6; --ex1: #2230b4; --ex2: #1c2899; --ex3: #16207c; background: radial-gradient(ellipse at 30% 0%, #4b56f0, #2C38D6 55%, #2230b4); }
+.lp:not(.desk-paper) .holes { display: none; }
+.lp:not(.desk-paper) .nav { background: color-mix(in srgb, var(--paper) 80%, transparent); }
+.lp:not(.desk-paper) .indexCard, .lp:not(.desk-paper) .drop, .lp:not(.desk-paper) .deskCal, .lp:not(.desk-paper) .indexCard h3 { color: #1B1E3F; }
+.lp:not(.desk-paper) .indexCard .hand, .lp:not(.desk-paper) .drop .hand, .lp:not(.desk-paper) .handList, .lp:not(.desk-paper) .drop .day > span { color: #2A44D8; }
+.lp:not(.desk-paper) .handList b { color: #E5385F; }
+.lp:not(.desk-paper) .drop .dropHint span, .lp:not(.desk-paper) .calUnit { color: #5E6286; }
+.lp:not(.desk-paper) .resHead b, .lp:not(.desk-paper) .dropHint b { color: #1B1E3F; }
+.lp:not(.desk-paper) .btn { --cap: #0b0d24; }
+.lp:not(.desk-paper) .btn:not(.ghost):not(.dark) { background: linear-gradient(#FFF07A, #FFD43B); color: #1B1E3F; --cap: #b08f00; }
+.lp:not(.desk-paper) .circleNum { color: var(--pen); border-color: var(--pen); }
+.lp:not(.desk-paper) .w, .lp:not(.desk-paper) .w.auto { color: inherit; }
+.lp:not(.desk-paper) .w { background-image: linear-gradient(100deg, transparent 1%, rgba(255,122,168,.75) 3%, rgba(255,122,168,.6) 97%, transparent 99%); }
+.lp:not(.desk-paper) mark { background-image: linear-gradient(100deg, transparent 2%, rgba(255,222,60,.9) 4%, rgba(255,222,60,.75) 96%, transparent 98%); }
+.lp:not(.desk-paper) .tapeStrip { box-shadow: 0 20px 30px -14px rgba(0,0,0,.55); }
+.lp:not(.desk-paper) .sticky, .lp:not(.desk-paper) .indexCard, .lp:not(.desk-paper) .deskCal, .lp:not(.desk-paper) .clipboard, .lp:not(.desk-paper) .syllabus { filter: drop-shadow(0 20px 18px rgba(0,0,0,.35)); }
+.lp:not(.desk-paper) footer { border-color: rgba(255,255,255,.2); }
+.lp:not(.desk-paper) .link { color: rgba(244,245,255,.75); }
+.lp:not(.desk-paper) .link:hover { color: #fff; }
+.lp:not(.desk-paper) .scribble svg path { stroke: #FFE45E; }
+.lp:not(.desk-paper) .mood { filter: brightness(1.9) saturate(.8); }
+.lp:not(.desk-paper) .syllabus.used { opacity: .55; }
 
 /* ---------- depth ---------- */
 .lp { --px: 0; --py: 0; }
