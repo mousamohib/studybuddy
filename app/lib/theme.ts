@@ -3,12 +3,12 @@
 import { useColorScheme } from '@/components/useColorScheme';
 
 const light = {
-  bg: '#F3F4FA',
-  surface: '#E9EBF6',     // sunken areas: inputs, tracks, chips
+  bg: '#FFFFFF',
+  surface: '#F1F2F8',     // filled areas: inputs, tracks, chips
   card: '#FFFFFF',
   text: '#181A36',
   muted: '#676B90',
-  border: '#DFE2F0',
+  border: '#E6E8F1',
   accent: '#3442F5',      // ink blue
   accentSoft: '#E4E6FF',
   onAccent: '#FFFFFF',
@@ -23,10 +23,10 @@ const light = {
 const dark: typeof light = {
   bg: '#0F1124',
   surface: '#1B1E3B',
-  card: '#171A34',
+  card: '#0F1124',
   text: '#EEF0FF',
   muted: '#9A9EC6',
-  border: '#2A2E55',
+  border: '#242849',
   accent: '#7D88FF',
   accentSoft: '#252A5C',
   onAccent: '#0F1124',

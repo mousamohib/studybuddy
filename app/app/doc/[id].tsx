@@ -57,7 +57,7 @@ export default function DocScreen() {
         <Button title="Share" small kind="soft" icon={ic('link', 'link')} onPress={share} style={{ flex: 1 }} />
         <Button title="Copy" small kind="soft" icon={ic('doc.on.doc', 'content_copy')} onPress={async () => { await Clipboard.setStringAsync(doc.body ?? ''); notice('Copied', 'Equations are kept as LaTeX.'); }} style={{ flex: 1 }} />
       </Row>
-      <Card style={{ padding: space.lg }}><DocView kind={doc.kind} body={doc.body ?? ''} /></Card>
+      <DocView kind={doc.kind} body={doc.body ?? ''} />
       {doc.meta?.skipped?.length ? (
         <Card style={{ gap: space.sm }}>
           <T variant="label" muted>Left out as not important for the exam</T>

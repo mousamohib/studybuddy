@@ -1,7 +1,7 @@
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Platform, Pressable, Switch, Text, View } from 'react-native';
-import { Button, Card, Field, Icon, ic, LinkText, Meter, Pressy, Row, Screen, Section, T } from '@/components/ui';
+import { Button, Card, Field, Icon, ic, LinkText, ListRow, Meter, Pressy, Row, Screen, Section, T } from '@/components/ui';
 import { SchoolPicker } from '@/components/SchoolPicker';
 import { useMenu, useNotice } from '@/components/Menu';
 import { useAccount } from '@/lib/auth';
@@ -85,16 +85,16 @@ export default function Profile() {
       </Row>
 
       {p && (editSchool ? (
-        <Card style={{ gap: space.md, zIndex: 5 }}>
+        <View style={{ gap: space.md, zIndex: 5 }}>
           <SchoolPicker value={school} onChange={setSchool} country={session?.user.user_metadata?.country === 'GB' ? 'GB' : 'CA'} />
           <Row><Button title="Save" small onPress={() => update({ school: school.trim() || null }, () => setEditSchool(false))} /><Button title="Cancel" small kind="ghost" onPress={() => { setSchool(p.school ?? ''); setEditSchool(false); }} /></Row>
-        </Card>
+        </View>
       ) : (
-        <Pressy onPress={() => setEditSchool(true)} style={{ flexDirection: 'row', alignItems: 'center', gap: space.md, backgroundColor: t.card, borderRadius: radius.lg, borderWidth: 1, borderColor: t.border, padding: space.md }}>
+        <ListRow onPress={() => setEditSchool(true)} last>
           <Icon name={ic('building.columns.fill', 'account_balance')} size={22} color={t.accent} />
           <T variant="strong" style={{ flex: 1 }}>{p.school || 'Add your school'}</T>
           <T variant="label" color={t.accent}>Edit</T>
-        </Pressy>
+        </ListRow>
       ))}
 
       <View style={{ backgroundColor: t.accent, borderRadius: radius.xl, padding: space.xl, gap: space.md, overflow: 'hidden' }}>
@@ -106,11 +106,10 @@ export default function Profile() {
           </View>
           {plan === 'free' || trialEndsAt ? <Button title="Upgrade" kind="highlight" small onPress={() => router.push('/paywall')} /> : null}
         </Row>
-        <View style={{ backgroundColor: t.card, borderRadius: radius.lg, padding: space.lg, gap: space.md }}>
-          <T variant="label" muted>Used this month</T>
-          {fields.map((f, i) => <Meter key={f} label={USAGE_LABELS[f]} used={usage[f]} limit={limits[f]} color={['#3442F5', '#F0457E', '#0F9F74', '#F07A12', '#8B4DF0'][i]} />)}
-        </View>
       </View>
+      <Section title="Used this month">
+        {fields.map((f, i) => <Meter key={f} label={USAGE_LABELS[f]} used={usage[f]} limit={limits[f]} color={['#3442F5', '#F0457E', '#0F9F74', '#F07A12', '#8B4DF0'][i]} />)}
+      </Section>
 
       {p && (
         <>
@@ -121,7 +120,7 @@ export default function Profile() {
               const look = STYLE_LOOK[s.key], on = p.teaching_style === s.key;
               return (
                 <Pressy key={s.key} onPress={() => update({ teaching_style: s.key })} accessibilityRole="radio" accessibilityState={{ checked: on }}
-                  style={{ flexGrow: 1, flexBasis: 140, flexDirection: 'row', alignItems: 'center', gap: 8, padding: 10, borderRadius: radius.md, borderWidth: 2, borderColor: on ? look.color : t.border, backgroundColor: on ? tint(look.color, t.dark ? 0.16 : 0.08) : 'transparent' }}>
+                  style={{ flexGrow: 1, flexBasis: 140, flexDirection: 'row', alignItems: 'center', gap: 8, padding: 10, borderRadius: radius.md, backgroundColor: on ? tint(look.color, t.dark ? 0.2 : 0.12) : t.surface }}>
                   <View style={{ width: 30, height: 30, borderRadius: 9, backgroundColor: look.color, alignItems: 'center', justifyContent: 'center' }}><Icon name={ic(look.ios, look.material)} size={16} color="#FFFFFF" /></View>
                   <T variant="label" style={{ flex: 1 }}>{s.name}</T>
                 </Pressy>

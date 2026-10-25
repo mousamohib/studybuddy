@@ -1,7 +1,7 @@
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Pressable, View } from 'react-native';
-import { Button, Card, Field, Row, T } from '@/components/ui';
+import { Button, Card, Field, Segments, Row, T } from '@/components/ui';
 import { useMenu, useNotice } from '@/components/Menu';
 import { STYLE_OPTIONS } from '@/lib/styles';
 import { COURSE_COLOURS } from '@/lib/data';
@@ -44,13 +44,7 @@ export function Settings({ data }: { data: CourseData }) {
         </View>
         <View style={{ gap: 6 }}>
           <T variant="small" muted>Teaching style for this course</T>
-          <Row>
-            {[{ key: '', name: 'Use my default' }, ...STYLE_OPTIONS].map((s) => (
-              <Pressable key={s.key} onPress={() => setF({ ...f, teaching_style: s.key })} style={{ paddingVertical: 6, paddingHorizontal: 10, borderRadius: 999, borderWidth: 1, borderColor: f.teaching_style === s.key ? t.accent : t.border }}>
-                <T variant="small">{s.name}</T>
-              </Pressable>
-            ))}
-          </Row>
+          <Segments items={[{ key: '', name: 'Use my default' }, ...STYLE_OPTIONS].map((s) => ({ key: s.key, label: s.name }))} value={f.teaching_style} onChange={(k) => setF({ ...f, teaching_style: k })} />
         </View>
         <Field label="Course rules for the tutor" placeholder="e.g. Closed book, no calculator. Derivations are examined. Use the prof's notation." value={f.rules} onChangeText={(v) => setF({ ...f, rules: v })} multiline style={{ minHeight: 90, textAlignVertical: 'top' }} />
         <Field label="AI policy from the syllabus" placeholder="e.g. AI allowed for learning, not for graded code" value={f.ai_policy} onChangeText={(v) => setF({ ...f, ai_policy: v })} multiline />

@@ -1,7 +1,7 @@
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Text, TextInput, View, Platform } from 'react-native';
-import { CourseTag, Icon, IconButton, ic, Pressy, Row, Screen, Segments, Stickers, T } from '@/components/ui';
+import { CourseTag, Icon, IconButton, ic, ListRow, Pressy, Row, Screen, Segments, Stickers, T } from '@/components/ui';
 import { useNotice } from '@/components/Menu';
 import { openNewChat } from '@/lib/chats';
 import { courseColour, MODE_LABEL, type ChatMode, type ChatRow, type Course } from '@/lib/data';
@@ -60,7 +60,7 @@ export default function ChatTab() {
       <View style={{ backgroundColor: accent, borderRadius: radius.xl, padding: space.lg, gap: space.md, overflow: 'hidden' }}>
         <View style={{ position: 'absolute', right: -30, top: -40, width: 140, height: 140, borderRadius: 70, backgroundColor: 'rgba(255,255,255,0.12)' }} />
         <Text style={{ color: '#fff', fontFamily: font.heading, fontSize: 22 }}>{sel ? `Stuck on something in ${sel.code}?` : 'What are you stuck on?'}</Text>
-        <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 6, backgroundColor: t.card, borderRadius: 22, padding: 5 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 6, backgroundColor: t.bg, borderRadius: 22, padding: 5 }}>
           <TextInput value={q} onChangeText={setQ} placeholder={sel ? `Ask about ${sel.code}…` : 'Ask anything…'} placeholderTextColor={t.muted} multiline onSubmitEditing={ask}
             style={{ flex: 1, color: t.text, paddingHorizontal: 12, paddingVertical: 10, maxHeight: 120, fontSize: 16, fontFamily: font.body, ...(Platform.OS === 'web' ? { outlineStyle: 'none' } as object : {}) }} />
           <IconButton icon={ic('arrow.up', 'arrow_upward')} label="Ask" size={42} bg={q.trim() ? accent : t.surface} color={q.trim() ? '#FFFFFF' : t.muted} onPress={ask} />
@@ -78,15 +78,12 @@ export default function ChatTab() {
           <T muted style={{ textAlign: 'center', maxWidth: 300 }}>No chats yet. Ask above, or tap play on a session in your plan to start a lesson.</T>
         </View>
       )}
-      <View style={{ gap: space.sm }}>
-        {shown.map((ch) => {
+      <View>
+        {shown.map((ch, i) => {
           const c = course(ch.course_id), col = colOf(ch.course_id), mi = MODE_ICON[ch.mode];
           return (
-            <Pressy key={ch.id} onPress={() => router.push({ pathname: '/chat/[id]', params: { id: ch.id } })}
-              style={{ flexDirection: 'row', alignItems: 'center', gap: space.md, backgroundColor: t.card, borderRadius: radius.lg, borderWidth: 1, borderColor: t.border, padding: space.md }}>
-              <View style={{ width: 44, height: 44, borderRadius: 14, backgroundColor: tint(col, t.dark ? 0.22 : 0.12), alignItems: 'center', justifyContent: 'center' }}>
-                <Icon name={ic(mi.ios, mi.material)} size={22} color={ink(col, t)} />
-              </View>
+            <ListRow key={ch.id} last={i === shown.length - 1} onPress={() => router.push({ pathname: '/chat/[id]', params: { id: ch.id } })}>
+              <Icon name={ic(mi.ios, mi.material)} size={22} color={ink(col, t)} />
               <View style={{ flex: 1, gap: 4 }}>
                 <T variant="strong" numberOfLines={1}>{ch.title}</T>
                 <Row style={{ gap: 6 }}>
@@ -95,7 +92,7 @@ export default function ChatTab() {
                 </Row>
               </View>
               <Icon name={ic('chevron.right', 'chevron_right')} size={18} color={t.muted} />
-            </Pressy>
+            </ListRow>
           );
         })}
       </View>

@@ -30,7 +30,7 @@ export default function Paywall() {
     const on = period === k;
     return (
       <Pressy onPress={() => setPeriod(k)} accessibilityRole="radio" accessibilityState={{ checked: on }}
-        style={{ flex: 1, padding: space.lg, borderRadius: radius.lg, borderWidth: 2, borderColor: on ? t.accent : t.border, backgroundColor: on ? t.accentSoft : t.card, gap: 4 }}>
+        style={{ flex: 1, padding: space.lg, borderRadius: radius.lg, borderWidth: 2, borderColor: on ? t.accent : 'transparent', backgroundColor: on ? t.accentSoft : t.surface, gap: 4 }}>
         {note ? <View style={{ position: 'absolute', top: -11, right: 12, backgroundColor: t.highlight, borderRadius: 6, paddingHorizontal: 7, paddingVertical: 2 }}><Text style={{ fontFamily: font.bold, fontSize: 11.5, color: t.onHighlight }}>{note}</Text></View> : null}
         <T variant="label" muted>{title}</T>
         <T variant="heading">{price}</T>
@@ -46,14 +46,14 @@ export default function Paywall() {
         <T muted style={{ fontSize: 17, lineHeight: 25 }}>Room for every course, file and exam, with a tutor you can ask as often as you need.</T>
       </View>
 
-      <Card style={{ padding: 0, overflow: 'hidden', gap: 0 }}>
-        <Row style={{ paddingHorizontal: space.lg, paddingVertical: space.md, backgroundColor: t.surface, flexWrap: 'nowrap' }}>
+      <View>
+        <Row style={{ paddingVertical: space.sm, flexWrap: 'nowrap', borderBottomWidth: 2, borderColor: t.text }}>
           <T variant="label" muted style={{ flex: 1 }}>Each month</T>
           <T variant="label" muted style={{ width: 56, textAlign: 'center' }}>Free</T>
           <T variant="label" color={t.accent} style={{ width: 84, textAlign: 'center' }}>Pro</T>
         </Row>
         {[['Courses', LIMITS.free.courses, LIMITS.pro.courses] as const, ...rows.map((r) => [USAGE_LABELS[r], LIMITS.free[r], LIMITS.pro[r]] as const)].map(([label, f, p], i) => (
-          <Row key={label} style={{ paddingHorizontal: space.lg, paddingVertical: 12, borderTopWidth: i ? 1 : 0, borderColor: t.border, flexWrap: 'nowrap' }}>
+          <Row key={label} style={{ paddingVertical: 12, borderTopWidth: i ? 1 : 0, borderColor: t.border, flexWrap: 'nowrap' }}>
             <T variant="small" style={{ flex: 1 }}>{label}</T>
             <T variant="small" muted style={{ width: 56, textAlign: 'center' }}>{f}</T>
             <View style={{ width: 84, alignItems: 'center' }}>
@@ -63,7 +63,7 @@ export default function Paywall() {
             </View>
           </Row>
         ))}
-      </Card>
+      </View>
 
       {plan === 'pro' && !trialEndsAt ? (
         <Card tint={t.good}><Row><Icon name={ic('checkmark.seal.fill', 'verified')} color={t.good} /><T variant="strong">You're on Pro. Thanks for supporting StudyBuddy.</T></Row></Card>

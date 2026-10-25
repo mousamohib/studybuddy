@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Pressable, View } from 'react-native';
 import { Rich } from './Rich';
 import { LinkText, T } from './ui';
-import { radius, space, useTheme } from '@/lib/theme';
+import { radius, space, useTheme, tint } from '@/lib/theme';
 
 /** A sheet, or a practice paper with each answer folded under its question. */
 export function DocView({ kind, body }: { kind: string; body: string }) {
@@ -30,7 +30,7 @@ export function DocView({ kind, body }: { kind: string; body: string }) {
         <View key={i} style={{ gap: space.sm }}>
           {p.q.trim() ? <Rich text={p.q} /> : null}
           {p.a !== undefined && (
-            <View style={{ borderWidth: 1, borderColor: t.border, borderLeftWidth: 4, borderLeftColor: t.good, borderRadius: radius.md, overflow: 'hidden' }}>
+            <View style={{ backgroundColor: tint(t.good, t.dark ? 0.12 : 0.07), borderRadius: radius.md, overflow: 'hidden' }}>
               <Pressable onPress={() => toggle(i)} style={{ padding: space.md }} accessibilityRole="button">
                 <T style={{ color: t.good, fontWeight: '600' }}>{openAll || opened.has(i) ? 'Hide answer' : 'Show answer'}</T>
               </Pressable>

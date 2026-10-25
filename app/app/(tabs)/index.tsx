@@ -1,7 +1,7 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { ActivityIndicator, ScrollView, Text, View } from 'react-native';
-import { Button, Card, CourseTag, Empty, Field, IconButton, ic, Pressy, Ring, Row, Screen, Section, T, LinkText } from '@/components/ui';
+import { Button, Card, CourseTag, Empty, Field, IconButton, ic, ListRow, Pressy, Ring, Row, Screen, Section, T, LinkText } from '@/components/ui';
 import { PlanSession, type FullSession } from '@/components/PlanSession';
 import { Rich } from '@/components/Rich';
 import { useAccount } from '@/lib/auth';
@@ -101,21 +101,25 @@ export default function Today() {
       })()}
 
       {rest.length > 0 && (
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -space.lg }} contentContainerStyle={{ gap: space.sm, paddingHorizontal: space.lg }}>
-          {rest.slice(0, 8).map((d) => {
-            const code = codeOf(d.course_id), col = p.colourOf(code), n = daysUntil(d.due_at);
-            return (
-              <Card key={d.id} tint={col} onPress={() => router.push({ pathname: '/course/[id]', params: { id: d.course_id, section: 'deadlines' } })} style={{ width: 170, gap: 6, padding: space.md }}>
-                <Row style={{ justifyContent: 'space-between' }}>
-                  <CourseTag code={code} color={col} />
-                  <T variant="tiny" color={n <= 3 ? t.danger : ink(col, t)}>{n === 0 ? 'Today' : n === 1 ? 'Tomorrow' : `${n} days`}</T>
-                </Row>
-                <T variant="strong" numberOfLines={2}>{d.label || KIND_LABEL[d.kind]}</T>
-                <T variant="small" muted>{fmtDay(d.due_at)}</T>
-              </Card>
-            );
-          })}
-        </ScrollView>
+        <Section title="Coming up">
+          <View>
+            {rest.slice(0, 5).map((d, i) => {
+              const code = codeOf(d.course_id), col = p.colourOf(code), n = daysUntil(d.due_at);
+              return (
+                <ListRow key={d.id} last={i === Math.min(rest.length, 5) - 1} onPress={() => router.push({ pathname: '/course/[id]', params: { id: d.course_id, section: 'deadlines' } })}>
+                  <View style={{ width: 44, alignItems: 'center' }}>
+                    <Text style={{ fontFamily: font.display, fontSize: 22, lineHeight: 24, color: n <= 3 ? t.danger : t.text }}>{n}</Text>
+                    <T variant="tiny" muted>{n === 1 ? 'day' : 'days'}</T>
+                  </View>
+                  <View style={{ flex: 1, gap: 3 }}>
+                    <T variant="strong" numberOfLines={1}>{d.label || KIND_LABEL[d.kind]}</T>
+                    <Row style={{ gap: 6 }}><CourseTag code={code} color={col} /><T variant="small" muted>{fmtDay(d.due_at)}</T></Row>
+                  </View>
+                </ListRow>
+              );
+            })}
+          </View>
+        </Section>
       )}
 
       {trialEndsAt && (
@@ -154,7 +158,7 @@ export default function Today() {
         )}
       </Section>
 
-      <Card style={{ gap: space.md, padding: space.lg }}>
+      <Card style={{ gap: space.md }}>
         <T variant="heading">Change the plan</T>
         <T variant="small" muted>Say it in your own words. The plan updates around your deadlines.</T>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -space.lg }} contentContainerStyle={{ gap: 8, paddingHorizontal: space.lg }}>
@@ -184,7 +188,7 @@ export default function Today() {
       </Card>
 
       {p.plan?.summary ? (
-        <Card style={{ gap: space.sm, backgroundColor: tint(t.highlight, t.dark ? 0.12 : 0.28), borderColor: tint(t.highlight, 0.6) }}>
+        <Card style={{ gap: space.sm }}>
           <Pressy haptics={false} onPress={() => setShowWhy(!showWhy)} style={{ flexDirection: 'row', alignItems: 'center' }}>
             <T variant="heading" style={{ flex: 1 }}>Why this plan</T>
             <T variant="label" muted>{showWhy ? 'Hide' : 'Show'}</T>

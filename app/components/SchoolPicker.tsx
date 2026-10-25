@@ -37,12 +37,12 @@ export function SchoolPicker({ value, onChange, country, label = 'University or 
       <Field label={label} placeholder="Start typing, e.g. McGill" value={value} autoCorrect={false}
         onChangeText={(v) => { onChange(v); setOpen(true); }} onFocus={() => setOpen(true)} onBlur={() => setTimeout(() => setOpen(false), 150)} />
       {open && results.length > 0 && !exact && (
-        <View style={{ backgroundColor: t.card, borderRadius: radius.md, borderWidth: 1, borderColor: t.border, overflow: 'hidden' }}>
+        <View style={{ backgroundColor: t.surface, borderRadius: radius.md, overflow: 'hidden' }}>
           {results.map((r, i) => (
             <Pressable key={r.n} onPress={() => { onChange(r.n); setOpen(false); }}
               style={({ pressed, hovered }: { pressed: boolean; hovered?: boolean }) => ({
                 flexDirection: 'row', alignItems: 'center', gap: space.md, paddingVertical: 12, paddingHorizontal: space.md,
-                borderTopWidth: i ? 1 : 0, borderColor: t.border, backgroundColor: pressed || hovered ? t.accentSoft : 'transparent',
+                borderTopWidth: i ? 1 : 0, borderColor: t.bg, backgroundColor: pressed || hovered ? t.accentSoft : 'transparent',
               })}>
               <Icon name={ic('building.columns.fill', 'account_balance')} size={18} color={t.accent} />
               <Text style={{ flex: 1, color: t.text, fontFamily: font.medium, fontSize: 15 }}>{r.n}</Text>

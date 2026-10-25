@@ -217,7 +217,7 @@ export default function ChatScreen() {
             <T muted>{code ? `I know your course rules, deadlines, today's plan and ${chat.material_ids.length} of your file${chat.material_ids.length === 1 ? '' : 's'}.` : 'For course-specific help, start a chat from a course.'}</T>
             <View style={{ gap: 8 }}>
               {['Explain the main idea of this topic simply', 'Quiz me with 3 questions', 'What should I study first?'].map((q) => (
-                <Pressy key={q} onPress={() => send(q)} style={{ padding: space.md, borderRadius: radius.md, backgroundColor: tint(accent, t.dark ? 0.16 : 0.08), borderWidth: 1, borderColor: tint(accent, 0.25) }}>
+                <Pressy key={q} onPress={() => send(q)} style={{ padding: space.md, borderRadius: radius.md, backgroundColor: tint(accent, t.dark ? 0.16 : 0.08) }}>
                   <T variant="label" color={ink(accent, t)}>{q}</T>
                 </Pressy>
               ))}
@@ -239,13 +239,13 @@ export default function ChatScreen() {
               </View>
               <T variant="label" muted>StudyBuddy{item.shape ? ` · rewritten: ${RESHAPE_OPTIONS.find((r) => r.key === item.shape)?.label.toLowerCase()}` : ''}</T>
             </Row>
-            <View style={{ backgroundColor: t.card, borderRadius: 20, borderTopLeftRadius: 6, borderWidth: 1, borderColor: t.border, padding: space.lg }}>
+            <View style={{ paddingLeft: 34 }}>
               {item.live && !item.content ? <Dots color={accent} /> : <Rich text={item.content} fontSize={16} />}
             </View>
-            {item.saved?.map((s: string) => <Pill key={s} label={s.startsWith('Revisit') ? s : `Remembered: ${s}`} color={t.good} />)}
+            {item.saved?.map((s: string) => <View key={s} style={{ paddingLeft: 34 }}><Pill label={s.startsWith('Revisit') ? s : `Remembered: ${s}`} color={t.good} /></View>)}
             {item.interrupted ? <T variant="small" color={t.warn}>This answer was cut off.</T> : null}
             {!item.live && (
-              <Row style={{ gap: 6 }}>
+              <Row style={{ gap: 6, paddingLeft: 34 }}>
                 <Action icon={ic('wand.and.stars', 'auto_fix_high')} label="Change it" onPress={() => messageMenu(item, index)} />
                 <Action icon={ic('doc.on.doc', 'content_copy')} label="Copy" onPress={() => { Clipboard.setStringAsync(item.content); haptic.success(); }} />
                 {index === msgs.length - 1 && <Action icon={ic('arrow.clockwise', 'refresh')} label="Again" onPress={() => send('', { regenerate: true })} />}
@@ -266,15 +266,15 @@ export default function ChatScreen() {
         </View>
       )}
       <View style={{ padding: space.md, paddingBottom: Platform.OS === 'ios' ? space.xl : space.md }}>
-        <View style={{ flexDirection: 'row', gap: 6, alignItems: 'flex-end', backgroundColor: t.card, borderRadius: 26, borderWidth: 1, borderColor: t.border, padding: 5 }}>
-          <IconButton icon={ic('plus', 'add')} label="Attach files" size={42} bg={t.surface} color={t.muted} onPress={() => open('Attach to this chat', [
+        <View style={{ flexDirection: 'row', gap: 6, alignItems: 'flex-end', backgroundColor: t.surface, borderRadius: 26, padding: 5 }}>
+          <IconButton icon={ic('plus', 'add')} label="Attach files" size={42} bg={t.bg} color={t.muted} onPress={() => open('Attach to this chat', [
             { label: 'Files', onPress: () => attach(pickDocuments) }, { label: 'Photos', onPress: () => attach(() => pickPhoto(false)) },
             { label: 'Take a photo', onPress: () => attach(() => pickPhoto(true)) }, { label: 'Cancel' }])} />
           <TextInput value={text} onChangeText={setText} placeholder={code ? `Ask about ${code}…` : 'Ask anything…'} placeholderTextColor={t.muted} multiline
             style={{ flex: 1, color: t.text, paddingHorizontal: 6, paddingVertical: 10, maxHeight: 160, fontSize: 16, fontFamily: font.body, ...(Platform.OS === 'web' ? { outlineStyle: 'none' } as object : {}) }} />
           {live
             ? <IconButton icon={ic('stop.fill', 'stop')} label="Stop" size={42} bg={t.text} color={t.bg} onPress={() => abort.current?.abort()} />
-            : <IconButton icon={ic('arrow.up', 'arrow_upward')} label="Send" size={42} bg={text.trim() ? accent : t.surface} color={text.trim() ? '#FFFFFF' : t.muted} onPress={() => send(text)} />}
+            : <IconButton icon={ic('arrow.up', 'arrow_upward')} label="Send" size={42} bg={text.trim() ? accent : t.bg} color={text.trim() ? '#FFFFFF' : t.muted} onPress={() => send(text)} />}
         </View>
       </View>
     </KeyboardAvoidingView>

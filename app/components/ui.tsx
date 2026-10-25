@@ -77,13 +77,15 @@ export function T({ children, variant = 'body', muted, color, style, numberOfLin
   return <Text numberOfLines={numberOfLines} style={[type[variant], { color: color ?? (muted ? t.muted : t.text) }, flat, fix]}>{children}</Text>;
 }
 
+/**
+ * A block of content. Plain blocks have no box: they sit on the page, separated by a thin rule above.
+ * `tint` makes a coloured note (for messages and highlights); `flat` a soft grey note.
+ */
 export function Card({ children, style, tint: tc, onPress, flat }: { children: ReactNode; style?: StyleProp<ViewStyle>; tint?: string; onPress?: () => void; flat?: boolean }) {
   const t = useTheme();
-  const base: ViewStyle = {
-    backgroundColor: tc ? tint(tc, t.dark ? 0.16 : 0.1) : flat ? t.surface : t.card,
-    borderColor: tc ? tint(tc, t.dark ? 0.35 : 0.25) : t.border, borderWidth: flat ? 0 : 1,
-    borderRadius: radius.lg, padding: space.lg, gap: space.sm,
-  };
+  const base: ViewStyle = tc || flat
+    ? { backgroundColor: tc ? tint(tc, t.dark ? 0.16 : 0.1) : t.surface, borderRadius: radius.md, padding: space.md, gap: space.sm }
+    : { borderTopWidth: StyleSheet.hairlineWidth * 2, borderColor: t.border, paddingTop: space.lg, gap: space.sm };
   if (onPress) return <Pressy onPress={onPress} style={[base, style]}>{children}</Pressy>;
   return <View style={[base, style]}>{children}</View>;
 }
@@ -125,8 +127,8 @@ export function Field(props: TextInputProps & { label?: string; hint?: string; e
       <TextInput placeholderTextColor={tint(t.muted, 0.8)}
         onFocus={(e) => { setFocused(true); onFocus?.(e); }} onBlur={(e) => { setFocused(false); onBlur?.(e); }}
         style={[{
-          borderColor: error ? t.danger : focused ? acc.color : t.border, borderWidth: focused ? 2 : 1, borderRadius: radius.md,
-          paddingHorizontal: focused ? 13 : 14, paddingVertical: focused ? 12 : 13, color: t.text, backgroundColor: t.card,
+          borderColor: error ? t.danger : focused ? acc.color : 'transparent', borderWidth: 2, borderRadius: radius.md,
+          paddingHorizontal: 13, paddingVertical: 12, color: t.text, backgroundColor: t.surface,
           fontSize: 16, fontFamily: font.body, ...(Platform.OS === 'web' ? { outlineStyle: 'none' } as object : {}),
         }, style]}
         {...rest} />
@@ -152,13 +154,27 @@ export function Stickers({ size = 72 }: { size?: number }) {
 
 export function Empty({ title, body, action }: { title: string; body: string; action?: ReactNode }) {
   return (
-    <Card style={{ alignItems: 'flex-start', gap: space.md, paddingVertical: space.xl }}>
+    <View style={{ alignItems: 'flex-start', gap: space.md, paddingVertical: space.xl }}>
       <Stickers size={44} />
-      <T variant="heading">{title}</T>
-      <T muted>{body}</T>
+      <T variant="title">{title}</T>
+      <T muted style={{ fontSize: 17, lineHeight: 25 }}>{body}</T>
       {action}
-    </Card>
+    </View>
   );
+}
+
+/** A list row: no box, a thin rule underneath. */
+export function ListRow({ children, onPress, onLongPress, style, last }: { children: ReactNode; onPress?: () => void; onLongPress?: () => void; style?: StyleProp<ViewStyle>; last?: boolean }) {
+  const t = useTheme();
+  const base: ViewStyle = { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingVertical: 14, borderBottomWidth: last ? 0 : StyleSheet.hairlineWidth * 2, borderColor: t.border };
+  if (onPress || onLongPress) {
+    return (
+      <Pressable onPress={() => { haptic.tap(); onPress?.(); }} onLongPress={onLongPress} style={({ pressed }) => [base, { opacity: pressed ? 0.6 : 1 }, style]}>
+        {children}
+      </Pressable>
+    );
+  }
+  return <View style={[base, style]}>{children}</View>;
 }
 
 function Bar({ value, color, height = 8 }: { value: number; color: string; height?: number }) {
@@ -234,7 +250,7 @@ export function Segments<K extends string>({ items, value, onChange, color }: { 
         const on = value === it.key, c = it.color ?? color ?? acc.color;
         return (
           <Pressy key={it.key} onPress={() => onChange(it.key)} accessibilityRole="tab" accessibilityState={{ selected: on }}
-            style={{ paddingVertical: 9, paddingHorizontal: 15, borderRadius: radius.pill, backgroundColor: on ? c : t.card, borderWidth: 1, borderColor: on ? c : t.border }}>
+            style={{ paddingVertical: 9, paddingHorizontal: 15, borderRadius: radius.pill, backgroundColor: on ? c : t.surface }}>
             <Text style={{ color: on ? (c === t.accent && !acc.custom && !it.color && !color ? t.onAccent : '#FFFFFF') : t.text, fontSize: 14, fontFamily: font.semi }}>{it.label}</Text>
           </Pressy>
         );
@@ -294,7 +310,7 @@ export function IconButton({ icon, onPress, color, bg, label, size = 40 }: { ico
   const t = useTheme();
   return (
     <Pressy onPress={onPress} accessibilityRole="button" accessibilityLabel={label}
-      style={{ width: size, height: size, borderRadius: size / 2, alignItems: 'center', justifyContent: 'center', backgroundColor: bg ?? t.card, borderWidth: bg ? 0 : 1, borderColor: t.border }}>
+      style={{ width: size, height: size, borderRadius: size / 2, alignItems: 'center', justifyContent: 'center', backgroundColor: bg ?? t.surface }}>
       <Icon name={icon} size={size * 0.5} color={color ?? t.text} />
     </Pressy>
   );

@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { ActivityIndicator, Pressable, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 import { Button, Card, Field, Icon, ic, LinkText, Pill, Pressy, Row, Segments, T, useAccent } from '@/components/ui';
 import { useMenu, useNotice } from '@/components/Menu';
 import { ApiError, deleteMaterial, ERROR_UPGRADE, pickDocuments, pickPhoto, uploadMaterial, type Picked } from '@/lib/api';
@@ -80,14 +80,14 @@ export function Materials({ data }: { data: CourseData }) {
     <View style={{ gap: space.md }}>
       <Segments items={items} value={tab} onChange={setTab} />
       {tab === 'new' ? (
-        <Card style={{ gap: space.md }}>
+        <View style={{ gap: space.md }}>
           <T variant="heading">New assignment</T>
           <T variant="small" muted>Each assignment gets its own place for the handout, starter code and your group's progress, so it never mixes with lecture material.</T>
           <Field label="Name" placeholder="PA2" value={newAsg.label} onChangeText={(v) => setNewAsg({ ...newAsg, label: v })} />
           <Field label="Due (YYYY-MM-DD HH:MM)" placeholder="2026-11-02 23:59" value={newAsg.due} onChangeText={(v) => setNewAsg({ ...newAsg, due: v })} autoCapitalize="none" />
           <Field label="Short description (optional)" placeholder="Link-state routing, part 2" value={newAsg.covers} onChangeText={(v) => setNewAsg({ ...newAsg, covers: v })} />
           <Button title="Create assignment" onPress={createAssignment} />
-        </Card>
+        </View>
       ) : (
         <>
           <T variant="small" muted>{current
@@ -96,7 +96,7 @@ export function Materials({ data }: { data: CourseData }) {
           {files.map((m) => {
             const look = FILE_LOOK(m.file_name), busy = ['uploaded', 'reading', 'outlining'].includes(m.status), isOpen = openOutline === m.id;
             return (
-              <Card key={m.id} style={{ gap: space.sm, padding: space.md }}>
+              <View key={m.id} style={{ gap: space.sm, paddingVertical: space.md, borderBottomWidth: StyleSheet.hairlineWidth * 2, borderColor: t.border }}>
                 <Pressy haptics={false} onPress={() => setOpenOutline(isOpen ? null : m.id)} onLongPress={() => remove(m)} style={{ flexDirection: 'row', alignItems: 'center', gap: space.md }}>
                   <View style={{ width: 44, height: 44, borderRadius: 12, backgroundColor: tint(look.c, t.dark ? 0.22 : 0.12), alignItems: 'center', justifyContent: 'center' }}>
                     {busy ? <ActivityIndicator size="small" color={look.c} /> : <Icon name={look.i} size={22} color={ink(look.c, t)} />}
@@ -125,17 +125,14 @@ export function Materials({ data }: { data: CourseData }) {
                 )}
                 {m.status === 'error' && <T variant="small" muted>{m.outline?.error === 'no readable text' ? 'No readable text (maybe a scanned PDF). Try uploading photos of the pages instead.' : 'Something went wrong reading this file. Delete it and try again.'}</T>}
                 {(isOpen || m.status === 'error') && <LinkText title="Delete file" color={t.danger} onPress={() => remove(m)} />}
-              </Card>
+              </View>
             );
           })}
           {uploading > 0 && <Row><ActivityIndicator color={accent} /><T variant="small" muted>Uploading {uploading} file{uploading > 1 ? 's' : ''}…</T></Row>}
-          <Pressy onPress={addMenu} style={{ borderWidth: 2, borderStyle: 'dashed', borderColor: tint(accent, 0.45), backgroundColor: tint(accent, t.dark ? 0.08 : 0.04), borderRadius: radius.lg, padding: space.xl, alignItems: 'center', gap: 6 }}>
-            <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: accent, alignItems: 'center', justifyContent: 'center' }}>
-              <Icon name={ic('arrow.up.doc.fill', 'upload_file')} size={24} color="#FFFFFF" />
-            </View>
-            <T variant="strong" color={ink(accent, t)}>{current ? 'Add handout, code or group progress' : files.length ? 'Add more files' : 'Add your first file'}</T>
+          <View style={{ gap: 6 }}>
+            <Button title={current ? 'Add handout, code or group progress' : files.length ? 'Add more files' : 'Add your first file'} icon={ic('arrow.up.doc.fill', 'upload_file')} onPress={addMenu} />
             <T variant="small" muted style={{ textAlign: 'center' }}>PDF, PowerPoint, Word, zip, code or photos of notes</T>
-          </Pressy>
+          </View>
           {current && <AssignmentInfo d={current} />}
         </>
       )}
@@ -145,7 +142,7 @@ export function Materials({ data }: { data: CourseData }) {
 
 function AssignmentInfo({ d }: { d: Deadline }) {
   return (
-    <Card style={{ gap: 4 }}>
+    <Card flat style={{ gap: 4 }}>
       <T variant="label" muted>About this assignment</T>
       <T>{d.covers || 'No description yet. Edit it in Deadlines.'}</T>
       <T variant="small" muted>Group projects and "my part" memory arrive in a later version.</T>

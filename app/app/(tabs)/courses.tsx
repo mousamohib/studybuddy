@@ -64,8 +64,8 @@ export default function Courses() {
           );
         })}
         {courses && courses.length > 0 && (
-          <Pressy onPress={add} style={{ flexGrow: 1, flexBasis: 160, minHeight: 190, borderRadius: radius.xl, borderWidth: 2, borderStyle: 'dashed', borderColor: t.border, alignItems: 'center', justifyContent: 'center', gap: 8, padding: space.lg }}>
-            <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: t.accentSoft, alignItems: 'center', justifyContent: 'center' }}>
+          <Pressy onPress={add} style={{ flexGrow: 1, flexBasis: 160, minHeight: 190, borderRadius: radius.xl, backgroundColor: t.surface, alignItems: 'center', justifyContent: 'center', gap: 8, padding: space.lg }}>
+            <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: t.bg, alignItems: 'center', justifyContent: 'center' }}>
               <Icon name={ic('plus', 'add')} size={26} color={t.accent} />
             </View>
             <T variant="strong" color={t.accent}>{atLimit && plan === 'free' ? 'Upgrade for more' : 'Add a course'}</T>

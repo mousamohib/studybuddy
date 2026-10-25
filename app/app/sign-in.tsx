@@ -43,7 +43,7 @@ export default function SignIn() {
           <Card tint={t.warn}><T variant="small">The app isn't connected to Supabase yet. Add the two values from the setup guide to app/.env and restart.</T></Card>
         )}
 
-        <Card style={{ gap: space.lg, padding: space.xl }}>
+        <View style={{ gap: space.lg }}>
           <Segments items={[{ key: 'up', label: 'Create account' }, { key: 'in', label: 'Sign in' }]} value={mode} onChange={(m) => { setMode(m); setMsg(null); }} />
           {mode === 'up' && <Field label="First name" value={name} onChangeText={setName} autoComplete="given-name" placeholder="Alex" />}
           <Field label="Email" value={email} onChangeText={setEmail} autoCapitalize="none" keyboardType="email-address" autoComplete="email" placeholder="you@school.ca" />
@@ -67,7 +67,7 @@ export default function SignIn() {
           )}
           {msg && <Card tint={msg.bad ? t.danger : t.good} style={{ padding: space.md }}><T variant="small" color={msg.bad ? t.danger : t.good}>{msg.text}</T></Card>}
           <Button title={mode === 'up' ? 'Create account' : 'Sign in'} onPress={submit} loading={busy} />
-        </Card>
+        </View>
       </ScrollView>
     </KeyboardAvoidingView>
   );

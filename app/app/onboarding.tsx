@@ -37,7 +37,7 @@ export default function Onboarding() {
   }
 
   const Hours = ({ label, value, set, color }: { label: string; value: number; set: (n: number) => void; color: string }) => (
-    <Card style={{ gap: space.md }}>
+    <View style={{ gap: space.md, paddingVertical: space.sm }}>
       <T variant="heading">{label}</T>
       <Row style={{ justifyContent: 'space-between', flexWrap: 'nowrap' }}>
         <IconButton icon={ic('minus', 'remove')} label={`Less on ${label}`} onPress={() => set(Math.max(0, value - 0.5))} size={48} />
@@ -47,7 +47,7 @@ export default function Onboarding() {
         </View>
         <IconButton icon={ic('plus', 'add')} label={`More on ${label}`} onPress={() => set(Math.min(12, value + 0.5))} size={48} bg={color} color="#FFFFFF" />
       </Row>
-    </Card>
+    </View>
   );
 
   return (
@@ -70,13 +70,13 @@ export default function Onboarding() {
           <>
             <T variant="display">How should it teach you?</T>
             <T muted>You can change this for any course, chat or single answer later.</T>
-            <View style={{ gap: space.sm }}>
+            <View style={{ gap: 2, marginHorizontal: -space.md }}>
               {STYLE_OPTIONS.filter((s) => s.key !== 'custom').map((s) => {
                 const look = STYLE_LOOK[s.key], on = style === s.key;
                 return (
                   <Pressy key={s.key} onPress={() => setStyle(s.key)} accessibilityRole="radio" accessibilityState={{ checked: on }}
-                    style={{ flexDirection: 'row', alignItems: 'center', gap: space.md, padding: space.md, borderRadius: radius.lg, borderWidth: 2,
-                      borderColor: on ? look.color : t.border, backgroundColor: on ? tint(look.color, t.dark ? 0.16 : 0.08) : t.card }}>
+                    style={{ flexDirection: 'row', alignItems: 'center', gap: space.md, padding: space.md, borderRadius: radius.lg,
+                      backgroundColor: on ? tint(look.color, t.dark ? 0.18 : 0.1) : 'transparent' }}>
                     <View style={{ width: 46, height: 46, borderRadius: 14, backgroundColor: look.color, alignItems: 'center', justifyContent: 'center' }}>
                       <Icon name={ic(look.ios, look.material)} size={24} color="#FFFFFF" />
                     </View>

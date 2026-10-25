@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { ActivityIndicator, Pressable, View } from 'react-native';
-import { Button, Card, Field, LinkText, Pill, Row, T, useAccent } from '@/components/ui';
+import { Button, Card, Field, LinkText, Pill, Row, Segments, T, useAccent } from '@/components/ui';
 import { Text } from 'react-native';
 import { useMenu, useNotice } from '@/components/Menu';
 import { ApiError, runJob } from '@/lib/api';
@@ -104,11 +104,7 @@ export function Deadlines({ data }: { data: CourseData }) {
       ) : draft ? (
         <Card style={{ gap: space.md }}>
           <T variant="heading">{draft.id ? 'Edit deadline' : 'New deadline'}</T>
-          <Row>{KINDS.map((k) => (
-            <Pressable key={k} onPress={() => setDraft({ ...draft, kind: k })} style={{ paddingVertical: 6, paddingHorizontal: 10, borderRadius: 999, borderWidth: 1, borderColor: draft.kind === k ? t.accent : t.border }}>
-              <T variant="small">{KIND_LABEL[k]}</T>
-            </Pressable>
-          ))}</Row>
+          <Segments items={KINDS.map((k) => ({ key: k, label: KIND_LABEL[k] }))} value={draft.kind} onChange={(k) => setDraft({ ...draft, kind: k })} />
           <Field label="Label (optional)" placeholder="Midterm 1" value={draft.label} onChangeText={(v) => setDraft({ ...draft, label: v })} />
           <Field label="Date and time (YYYY-MM-DD HH:MM)" placeholder="2026-10-21 11:30" value={draft.due} onChangeText={(v) => setDraft({ ...draft, due: v })} autoCapitalize="none" />
           <Field label="What it covers" placeholder="Lectures 1-7: framing, CRC, Ethernet, routing" value={draft.covers} onChangeText={(v) => setDraft({ ...draft, covers: v })} multiline />
@@ -139,11 +135,11 @@ function DeadlineCard({ d, onEdit, onDone }: { d: Deadline; onEdit: () => void; 
   const n = daysUntil(d.due_at), due = new Date(d.due_at), soon = !d.done && n <= 3 && n >= 0;
   return (
     <Card style={{ flexDirection: 'row', gap: space.md, opacity: d.done ? 0.55 : 1, padding: space.md }}>
-      <View style={{ width: 58, borderRadius: 14, overflow: 'hidden', borderWidth: 1, borderColor: TINT(accent, 0.3), alignSelf: 'flex-start' }}>
+      <View style={{ width: 58, borderRadius: 14, overflow: 'hidden', backgroundColor: t.surface, alignSelf: 'flex-start' }}>
         <View style={{ backgroundColor: accent, paddingVertical: 3, alignItems: 'center' }}>
           <Text style={{ color: '#fff', fontFamily: F.bold, fontSize: 11.5 }}>{due.toLocaleDateString(undefined, { month: 'short' }).toUpperCase()}</Text>
         </View>
-        <View style={{ alignItems: 'center', paddingVertical: 4, backgroundColor: t.card }}>
+        <View style={{ alignItems: 'center', paddingVertical: 4 }}>
           <Text style={{ color: t.text, fontFamily: F.display, fontSize: 24, lineHeight: 28 }}>{due.getDate()}</Text>
           <Text style={{ color: t.muted, fontFamily: F.semi, fontSize: 11 }}>{due.toLocaleDateString(undefined, { weekday: 'short' })}</Text>
         </View>

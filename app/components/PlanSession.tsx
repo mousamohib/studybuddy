@@ -1,11 +1,11 @@
-import { View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { Check, CourseTag, IconButton, ic, Row, T } from '@/components/ui';
 import { useNotice } from '@/components/Menu';
 import { openNewChat } from '@/lib/chats';
 import type { Course, Deadline } from '@/lib/data';
 import type { Session } from '@/lib/reminders';
 import { supabase } from '@/lib/supabase';
-import { ink, radius, space, tint, useTheme } from '@/lib/theme';
+import { ink, space, useTheme } from '@/lib/theme';
 
 export type FullSession = Session & { topics?: string[]; goal?: string; deadlineId?: string; materials?: string[] };
 
@@ -34,8 +34,7 @@ export function PlanSession({ s, done, colour, onToggle, courses, deadlines }: {
   }
 
   return (
-    <View style={{ flexDirection: 'row', gap: space.md, padding: space.md, paddingLeft: space.md + 2, borderRadius: radius.lg, backgroundColor: done ? tint(colour, t.dark ? 0.08 : 0.05) : t.card, borderWidth: 1, borderColor: done ? 'transparent' : t.border, overflow: 'hidden' }}>
-      <View style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 5, backgroundColor: colour, opacity: done ? 0.4 : 1 }} />
+    <View style={{ flexDirection: 'row', gap: space.md, paddingVertical: space.md, borderBottomWidth: StyleSheet.hairlineWidth * 2, borderColor: t.border }}>
       <View style={{ paddingTop: 2 }}><Check checked={done} onPress={onToggle} color={colour} /></View>
       <View style={{ flex: 1, gap: 4, opacity: done ? 0.55 : 1 }}>
         <Row style={{ gap: 6 }}>
