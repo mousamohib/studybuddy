@@ -7,7 +7,7 @@ import { Rich } from '@/components/Rich';
 import { useAccount } from '@/lib/auth';
 import { daysUntil, fmtDay, fmtTime, KIND_LABEL, localISO } from '@/lib/data';
 import { usePlan } from '@/lib/usePlan';
-import { font, radius, space, tint, useTheme } from '@/lib/theme';
+import { font, ink, radius, space, tint, useTheme } from '@/lib/theme';
 
 const CHIPS = ['Make today lighter', 'Take tomorrow off', "I'm behind, catch me up", 'Focus on my next exam'];
 const CHIP_TEXT: Record<string, string> = {
@@ -108,7 +108,7 @@ export default function Today() {
               <Card key={d.id} tint={col} onPress={() => router.push({ pathname: '/course/[id]', params: { id: d.course_id, section: 'deadlines' } })} style={{ width: 170, gap: 6, padding: space.md }}>
                 <Row style={{ justifyContent: 'space-between' }}>
                   <CourseTag code={code} color={col} />
-                  <T variant="tiny" color={n <= 3 ? t.danger : col}>{n === 0 ? 'Today' : n === 1 ? 'Tomorrow' : `${n} days`}</T>
+                  <T variant="tiny" color={n <= 3 ? t.danger : ink(col, t)}>{n === 0 ? 'Today' : n === 1 ? 'Tomorrow' : `${n} days`}</T>
                 </Row>
                 <T variant="strong" numberOfLines={2}>{d.label || KIND_LABEL[d.kind]}</T>
                 <T variant="small" muted>{fmtDay(d.due_at)}</T>

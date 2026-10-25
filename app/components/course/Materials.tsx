@@ -1,19 +1,30 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { ActivityIndicator, Pressable, View } from 'react-native';
-import { Button, Card, Field, LinkText, Pill, Row, Segments, T } from '@/components/ui';
+import { Button, Card, Field, Icon, ic, LinkText, Pill, Pressy, Row, Segments, T, useAccent } from '@/components/ui';
 import { useMenu, useNotice } from '@/components/Menu';
 import { ApiError, deleteMaterial, ERROR_UPGRADE, pickDocuments, pickPhoto, uploadMaterial, type Picked } from '@/lib/api';
 import { fmtDay, isAssignment, KIND_LABEL, localToISO, type Deadline, type Material } from '@/lib/data';
 import { supabase } from '@/lib/supabase';
-import { space, useTheme } from '@/lib/theme';
+import { ink, radius, space, tint, useTheme } from '@/lib/theme';
 import { useAccount } from '@/lib/auth';
 import type { CourseData } from './useCourse';
+
+const FILE_LOOK = (name: string) => {
+  const ext = name.split('.').pop()?.toLowerCase() ?? '';
+  if (ext === 'pdf') return { c: '#E5385F', i: ic('doc.richtext.fill', 'picture_as_pdf'), l: 'PDF' };
+  if (['ppt', 'pptx', 'key'].includes(ext)) return { c: '#F07A12', i: ic('rectangle.on.rectangle.angled.fill', 'slideshow'), l: 'Slides' };
+  if (['doc', 'docx', 'txt', 'md', 'rtf'].includes(ext)) return { c: '#3442F5', i: ic('doc.text.fill', 'article'), l: 'Doc' };
+  if (['zip'].includes(ext)) return { c: '#8B4DF0', i: ic('archivebox.fill', 'folder_zip'), l: 'Zip' };
+  if (['jpg', 'jpeg', 'png', 'heic', 'webp'].includes(ext)) return { c: '#0F9F74', i: ic('photo.fill', 'image'), l: 'Photo' };
+  return { c: '#0B93D6', i: ic('chevron.left.forwardslash.chevron.right', 'code'), l: 'Code' };
+};
 
 const STATUS: Record<Material['status'], string> = { uploaded: 'Uploading…', reading: 'Reading…', outlining: 'Outlining…', ready: 'Ready', error: "Couldn't read" };
 
 export function Materials({ data }: { data: CourseData }) {
   const t = useTheme();
+  const accent = useAccent().color;
   const { refresh } = useAccount();
   const { open, confirm } = useMenu();
   const notice = useNotice();
@@ -82,34 +93,49 @@ export function Materials({ data }: { data: CourseData }) {
           <T variant="small" muted>{current
             ? `Files for ${current.label || 'this assignment'} (due ${fmtDay(current.due_at)}). Assignment chats only use these plus what was taught.`
             : 'Lecture slides, notes, readings, sample exams and practice sheets. Everything here is treated as the syllabus for this course\'s tests.'}</T>
-          {files.map((m) => (
-            <Card key={m.id} style={{ gap: 6 }}>
-              <Pressable onPress={() => setOpenOutline(openOutline === m.id ? null : m.id)} onLongPress={() => remove(m)}>
-                <Row style={{ justifyContent: 'space-between', flexWrap: 'nowrap' }}>
-                  <T style={{ flex: 1, fontWeight: '600' }}>{m.file_name}</T>
-                  {['uploaded', 'reading', 'outlining'].includes(m.status) ? <ActivityIndicator size="small" /> : null}
-                </Row>
-                <Row>
-                  <Pill label={STATUS[m.status]} color={m.status === 'error' ? t.danger : m.status === 'ready' ? t.good : undefined} />
-                  {m.outline?.kind && m.status === 'ready' ? <Pill label={m.outline.kind} /> : null}
-                  {m.status === 'ready' ? <T variant="small" muted>{(m.outline?.topics ?? []).length} topics</T> : null}
-                </Row>
-              </Pressable>
-              {openOutline === m.id && m.status === 'ready' && (
-                <View style={{ gap: 4, paddingTop: 4 }}>
-                  {(m.outline?.topics ?? []).map((tp, i) => (
-                    <T key={i} variant="small">{`• ${tp.name}`}{tp.where ? <T variant="small" muted>{`  ${tp.where}`}</T> : null}</T>
-                  ))}
-                  {m.outline?.skipped?.length ? <T variant="small" muted>Skipped inside the file: {m.outline.skipped.slice(0, 8).join(', ')}</T> : null}
-                </View>
-              )}
-              {m.status === 'error' && <T variant="small" muted>{m.outline?.error === 'no readable text' ? 'No readable text (maybe a scanned PDF). Try uploading photos of the pages instead.' : 'Something went wrong reading this file. Delete it and try again.'}</T>}
-              {openOutline === m.id && <LinkText title="Delete file" color={t.danger} onPress={() => remove(m)} />}
-            </Card>
-          ))}
-          {!files.length && <T muted>Nothing here yet.</T>}
-          {uploading > 0 && <Row><ActivityIndicator /><T variant="small" muted>Uploading {uploading} file{uploading > 1 ? 's' : ''}…</T></Row>}
-          <Button title={current ? 'Add handout, code or group progress' : 'Add study material'} kind="secondary" onPress={addMenu} />
+          {files.map((m) => {
+            const look = FILE_LOOK(m.file_name), busy = ['uploaded', 'reading', 'outlining'].includes(m.status), isOpen = openOutline === m.id;
+            return (
+              <Card key={m.id} style={{ gap: space.sm, padding: space.md }}>
+                <Pressy haptics={false} onPress={() => setOpenOutline(isOpen ? null : m.id)} onLongPress={() => remove(m)} style={{ flexDirection: 'row', alignItems: 'center', gap: space.md }}>
+                  <View style={{ width: 44, height: 44, borderRadius: 12, backgroundColor: tint(look.c, t.dark ? 0.22 : 0.12), alignItems: 'center', justifyContent: 'center' }}>
+                    {busy ? <ActivityIndicator size="small" color={look.c} /> : <Icon name={look.i} size={22} color={ink(look.c, t)} />}
+                  </View>
+                  <View style={{ flex: 1, gap: 4 }}>
+                    <T variant="strong" numberOfLines={1}>{m.outline?.title && m.status === 'ready' ? m.outline.title : m.file_name}</T>
+                    <Row style={{ gap: 6 }}>
+                      {m.status === 'ready'
+                        ? <><Pill label={m.outline?.kind === 'practice' ? 'Practice' : m.outline?.kind === 'assignment' ? 'Assignment' : look.l} color={look.c} /><T variant="small" muted>{(m.outline?.topics ?? []).length} topics</T></>
+                        : <Pill label={STATUS[m.status]} color={m.status === 'error' ? t.danger : accent} />}
+                    </Row>
+                  </View>
+                  {m.status === 'ready' && <Icon name={isOpen ? ic('chevron.up', 'expand_less') : ic('chevron.down', 'expand_more')} size={20} color={t.muted} />}
+                </Pressy>
+                {isOpen && m.status === 'ready' && (
+                  <View style={{ gap: 6, paddingTop: 4, paddingLeft: 4 }}>
+                    <T variant="small" muted numberOfLines={1}>{m.file_name}</T>
+                    {(m.outline?.topics ?? []).map((tp, i) => (
+                      <Row key={i} style={{ flexWrap: 'nowrap', alignItems: 'flex-start' }}>
+                        <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: accent, marginTop: 7 }} />
+                        <T variant="small" style={{ flex: 1 }}>{tp.name}{tp.where ? <T variant="small" muted>{`  ${tp.where}`}</T> : null}</T>
+                      </Row>
+                    ))}
+                    {m.outline?.skipped?.length ? <T variant="small" muted>Skipped inside the file: {m.outline.skipped.slice(0, 8).join(', ')}</T> : null}
+                  </View>
+                )}
+                {m.status === 'error' && <T variant="small" muted>{m.outline?.error === 'no readable text' ? 'No readable text (maybe a scanned PDF). Try uploading photos of the pages instead.' : 'Something went wrong reading this file. Delete it and try again.'}</T>}
+                {(isOpen || m.status === 'error') && <LinkText title="Delete file" color={t.danger} onPress={() => remove(m)} />}
+              </Card>
+            );
+          })}
+          {uploading > 0 && <Row><ActivityIndicator color={accent} /><T variant="small" muted>Uploading {uploading} file{uploading > 1 ? 's' : ''}…</T></Row>}
+          <Pressy onPress={addMenu} style={{ borderWidth: 2, borderStyle: 'dashed', borderColor: tint(accent, 0.45), backgroundColor: tint(accent, t.dark ? 0.08 : 0.04), borderRadius: radius.lg, padding: space.xl, alignItems: 'center', gap: 6 }}>
+            <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: accent, alignItems: 'center', justifyContent: 'center' }}>
+              <Icon name={ic('arrow.up.doc.fill', 'upload_file')} size={24} color="#FFFFFF" />
+            </View>
+            <T variant="strong" color={ink(accent, t)}>{current ? 'Add handout, code or group progress' : files.length ? 'Add more files' : 'Add your first file'}</T>
+            <T variant="small" muted style={{ textAlign: 'center' }}>PDF, PowerPoint, Word, zip, code or photos of notes</T>
+          </Pressy>
           {current && <AssignmentInfo d={current} />}
         </>
       )}

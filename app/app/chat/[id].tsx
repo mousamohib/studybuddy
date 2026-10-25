@@ -1,17 +1,39 @@
 import * as Clipboard from 'expo-clipboard';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, FlatList, KeyboardAvoidingView, Platform, Pressable, TextInput, View } from 'react-native';
+import { ActivityIndicator, FlatList, KeyboardAvoidingView, Platform, Pressable, Text, TextInput, View } from 'react-native';
+import Animated, { FadeInDown, useAnimatedStyle, useSharedValue, withDelay, withRepeat, withSequence, withTiming } from 'react-native-reanimated';
 import { useHeaderHeight } from 'expo-router/react-navigation';
 import { Rich } from '@/components/Rich';
-import { Button, LinkText, Pill, Row, T } from '@/components/ui';
+import { CourseTag, haptic, Icon, IconButton, ic, Pill, Pressy, Row, T, type IconName } from '@/components/ui';
 import { useMenu, useNotice } from '@/components/Menu';
 import { ApiError, ERROR_UPGRADE, pickDocuments, pickPhoto, streamTutor, uploadMaterial, waitMaterial, type ChatMessage, type Picked } from '@/lib/api';
 import { useAccount } from '@/lib/auth';
-import { MODE_LABEL, type ChatRow } from '@/lib/data';
+import { courseColour, MODE_LABEL, type ChatRow, type Course } from '@/lib/data';
 import { RESHAPE_OPTIONS, STYLE_OPTIONS } from '@/lib/styles';
 import { supabase } from '@/lib/supabase';
-import { radius, space, useTheme } from '@/lib/theme';
+import { font, ink, radius, space, tint, useTheme } from '@/lib/theme';
+
+function Dots({ color }: { color: string }) {
+  return <Row style={{ gap: 5, paddingVertical: 6 }}>{[0, 1, 2].map((i) => <Dot key={i} i={i} color={color} />)}</Row>;
+}
+function Dot({ i, color }: { i: number; color: string }) {
+  const y = useSharedValue(0);
+  useEffect(() => { y.value = withDelay(i * 140, withRepeat(withSequence(withTiming(-5, { duration: 260 }), withTiming(0, { duration: 260 })), -1)); }, [i, y]);
+  const a = useAnimatedStyle(() => ({ transform: [{ translateY: y.value }] }));
+  return <Animated.View style={[{ width: 8, height: 8, borderRadius: 4, backgroundColor: color }, a]} />;
+}
+
+function Action({ icon, label, onPress }: { icon: IconName; label: string; onPress: () => void }) {
+  const t = useTheme();
+  return (
+    <Pressy onPress={onPress} accessibilityRole="button" accessibilityLabel={label}
+      style={{ flexDirection: 'row', alignItems: 'center', gap: 5, paddingVertical: 6, paddingHorizontal: 10, borderRadius: radius.pill, backgroundColor: t.surface }}>
+      <Icon name={icon} size={15} color={t.muted} />
+      <Text style={{ color: t.muted, fontFamily: font.semi, fontSize: 13 }}>{label}</Text>
+    </Pressy>
+  );
+}
 
 const QUICK = [
   { label: 'Next part', text: 'Continue to the next part.' },
@@ -30,6 +52,7 @@ export default function ChatScreen() {
   const notice = useNotice();
   const [chat, setChat] = useState<ChatRow | null>(null);
   const [code, setCode] = useState<string | null>(null);
+  const [courseCol, setCourseCol] = useState<string | null>(null);
   const [msgs, setMsgs] = useState<ChatMessage[]>([]);
   const [live, setLive] = useState<{ index: number; text: string; user?: string } | null>(null);
   const [text, setText] = useState('');
@@ -42,6 +65,11 @@ export default function ChatScreen() {
     const { data } = await supabase.from('chats').select('*, courses(code)').eq('id', id).maybeSingle();
     if (!data) return;
     setChat(data as ChatRow); setMsgs((data.messages ?? []) as ChatMessage[]); setCode((data as any).courses?.code ?? null);
+    if (data.course_id) {
+      const { data: cs } = await supabase.from('courses').select('*').order('created_at');
+      const i = (cs ?? []).findIndex((c) => c.id === data.course_id);
+      if (i >= 0) setCourseCol(courseColour(cs![i] as Course, i));
+    }
     return data;
   }, [id]);
 
@@ -164,60 +192,90 @@ export default function ChatScreen() {
     refresh();
   }
 
+  const accent = courseCol ?? t.accent;
   const items: (ChatMessage & { live?: boolean })[] = live
     ? [...msgs.slice(0, live.index), ...(live.user !== undefined ? [{ role: 'user' as const, content: live.user }] : []), { role: 'assistant' as const, content: live.text, live: true }, ...(live.user === undefined ? msgs.slice(live.index + 1) : [])]
     : msgs;
 
   return (
     <KeyboardAvoidingView style={{ flex: 1, backgroundColor: t.bg }} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={headerHeight}>
-      <Stack.Screen options={{ title: chat?.title ?? 'Chat', headerRight: () => <LinkText title="•••" onPress={chatMenu} /> }} />
+      <Stack.Screen options={{ title: chat?.title ?? 'Chat', headerRight: () => <IconButton icon={ic('ellipsis', 'more_horiz')} label="Chat options" size={36} onPress={chatMenu} /> }} />
       <FlatList ref={list} data={items} keyExtractor={(_, i) => String(i)}
         onContentSizeChange={() => live?.user !== undefined && list.current?.scrollToEnd({ animated: false })}
         contentContainerStyle={{ padding: space.lg, gap: space.lg, flexGrow: 1 }}
         ListHeaderComponent={chat ? (
           <Row>
-            {code ? <Pill label={code} /> : <Pill label="General" />}
-            <Pill label={MODE_LABEL[chat.mode]} />
+            {code ? <CourseTag code={code} color={accent} /> : <Pill label="General" />}
+            <Pill label={MODE_LABEL[chat.mode]} color={accent} />
             {chat.style ? <Pill label={STYLE_OPTIONS.find((s) => s.key === chat.style)?.name ?? chat.style} /> : null}
             {chat.modifier ? <Pill label={RESHAPE_OPTIONS.find((r) => r.key === chat.modifier)?.label ?? chat.modifier} color={t.accent} /> : null}
           </Row>
         ) : null}
-        ListEmptyComponent={chat ? <T muted>{code ? `Ask anything about ${code}. The tutor sees your rules, this course's memory, deadlines, today's plan and ${chat.material_ids.length} file${chat.material_ids.length === 1 ? '' : 's'}.` : 'Ask anything.'}</T> : <ActivityIndicator />}
+        ListEmptyComponent={chat ? (
+          <View style={{ gap: space.md, paddingTop: space.xl }}>
+            <T variant="title">{code ? `Ask me anything about ${code}` : 'Ask me anything'}</T>
+            <T muted>{code ? `I know your course rules, deadlines, today's plan and ${chat.material_ids.length} of your file${chat.material_ids.length === 1 ? '' : 's'}.` : 'For course-specific help, start a chat from a course.'}</T>
+            <View style={{ gap: 8 }}>
+              {['Explain the main idea of this topic simply', 'Quiz me with 3 questions', 'What should I study first?'].map((q) => (
+                <Pressy key={q} onPress={() => send(q)} style={{ padding: space.md, borderRadius: radius.md, backgroundColor: tint(accent, t.dark ? 0.16 : 0.08), borderWidth: 1, borderColor: tint(accent, 0.25) }}>
+                  <T variant="label" color={ink(accent, t)}>{q}</T>
+                </Pressy>
+              ))}
+            </View>
+          </View>
+        ) : <ActivityIndicator />}
         renderItem={({ item, index }) => item.role === 'user' ? (
-          <Pressable onLongPress={() => messageMenu(item, index)} style={{ alignSelf: 'flex-end', maxWidth: '88%', backgroundColor: t.surface, borderRadius: radius.lg, padding: space.md }}>
-            <T>{item.content}</T>
-          </Pressable>
+          <Animated.View entering={FadeInDown.duration(220)} style={{ alignSelf: 'flex-end', maxWidth: '86%' }}>
+            <Pressable onLongPress={() => messageMenu(item, index)}
+              style={{ backgroundColor: accent, borderRadius: 20, borderBottomRightRadius: 6, paddingVertical: 11, paddingHorizontal: 15 }}>
+              <Text style={{ color: '#FFFFFF', fontFamily: font.medium, fontSize: 16, lineHeight: 22 }}>{item.content}</Text>
+            </Pressable>
+          </Animated.View>
         ) : (
-          <Pressable onPress={() => !item.live && messageMenu(item, index)} style={{ gap: 6 }} accessibilityHint="Opens options to change this answer">
-            {item.live && !item.content ? <Row><ActivityIndicator size="small" /><T muted>Thinking…</T></Row> : <Rich text={item.content} />}
-            {item.saved?.map((s: string) => <Pill key={s} label={s.startsWith('Revisit') ? s : `Remembered: ${s}`} />)}
-            {item.shape ? <T variant="small" muted>Rewritten: {RESHAPE_OPTIONS.find((r) => r.key === item.shape)?.label}</T> : null}
-            {item.interrupted ? <T variant="small" style={{ color: t.warn }}>This answer was cut off.</T> : null}
-            {!item.live && <T variant="small" muted>Tap to make it simpler, more detailed, more mathematical…</T>}
-          </Pressable>
+          <View style={{ gap: 8 }}>
+            <Row style={{ gap: 8 }}>
+              <View style={{ width: 26, height: 26, borderRadius: 8, backgroundColor: t.highlight, alignItems: 'center', justifyContent: 'center', transform: [{ rotate: '-6deg' }] }}>
+                <Text style={{ fontFamily: font.display, fontSize: 13, color: t.onHighlight }}>SB</Text>
+              </View>
+              <T variant="label" muted>StudyBuddy{item.shape ? ` · rewritten: ${RESHAPE_OPTIONS.find((r) => r.key === item.shape)?.label.toLowerCase()}` : ''}</T>
+            </Row>
+            <View style={{ backgroundColor: t.card, borderRadius: 20, borderTopLeftRadius: 6, borderWidth: 1, borderColor: t.border, padding: space.lg }}>
+              {item.live && !item.content ? <Dots color={accent} /> : <Rich text={item.content} fontSize={16} />}
+            </View>
+            {item.saved?.map((s: string) => <Pill key={s} label={s.startsWith('Revisit') ? s : `Remembered: ${s}`} color={t.good} />)}
+            {item.interrupted ? <T variant="small" color={t.warn}>This answer was cut off.</T> : null}
+            {!item.live && (
+              <Row style={{ gap: 6 }}>
+                <Action icon={ic('wand.and.stars', 'auto_fix_high')} label="Change it" onPress={() => messageMenu(item, index)} />
+                <Action icon={ic('doc.on.doc', 'content_copy')} label="Copy" onPress={() => { Clipboard.setStringAsync(item.content); haptic.success(); }} />
+                {index === msgs.length - 1 && <Action icon={ic('arrow.clockwise', 'refresh')} label="Again" onPress={() => send('', { regenerate: true })} />}
+              </Row>
+            )}
+          </View>
         )}
       />
       {attaching ? <Row style={{ paddingHorizontal: space.lg }}><ActivityIndicator size="small" /><T variant="small" muted>{attaching}</T></Row> : null}
       {msgs.length > 0 && !live && (
         <View style={{ paddingHorizontal: space.md }}>
-          <FlatList horizontal data={QUICK} keyExtractor={(q) => q.label} showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6, paddingVertical: 4 }}
+          <FlatList horizontal data={QUICK} keyExtractor={(q) => q.label} showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingVertical: 6 }}
             renderItem={({ item }) => (
-              <Pressable onPress={() => send(item.text)} style={{ paddingVertical: 6, paddingHorizontal: 12, borderRadius: 999, borderWidth: 1, borderColor: t.border }}>
-                <T variant="small">{item.label}</T>
-              </Pressable>
+              <Pressy onPress={() => send(item.text)} style={{ paddingVertical: 8, paddingHorizontal: 14, borderRadius: 999, backgroundColor: tint(accent, t.dark ? 0.2 : 0.1) }}>
+                <Text style={{ color: ink(accent, t), fontFamily: font.semi, fontSize: 14 }}>{item.label}</Text>
+              </Pressy>
             )} />
         </View>
       )}
-      <View style={{ flexDirection: 'row', gap: space.sm, padding: space.md, borderTopWidth: 1, borderColor: t.border, alignItems: 'flex-end' }}>
-        <Pressable accessibilityLabel="Attach files" onPress={() => open('Attach to this chat', [
-          { label: 'Files', onPress: () => attach(pickDocuments) }, { label: 'Photos', onPress: () => attach(() => pickPhoto(false)) },
-          { label: 'Take a photo', onPress: () => attach(() => pickPhoto(true)) }, { label: 'Cancel' }])}
-          style={{ width: 42, height: 42, borderRadius: radius.md, borderWidth: 1, borderColor: t.border, alignItems: 'center', justifyContent: 'center' }}>
-          <T style={{ fontSize: 20, color: t.muted }}>+</T>
-        </Pressable>
-        <TextInput value={text} onChangeText={setText} placeholder="Message StudyBuddy…" placeholderTextColor={t.muted} multiline
-          style={{ flex: 1, color: t.text, backgroundColor: t.surface, borderRadius: radius.md, paddingHorizontal: space.md, paddingVertical: 10, maxHeight: 160, fontSize: 15 }} />
-        {live ? <Button title="Stop" kind="secondary" onPress={() => abort.current?.abort()} /> : <Button title="Send" onPress={() => send(text)} disabled={!text.trim()} />}
+      <View style={{ padding: space.md, paddingBottom: Platform.OS === 'ios' ? space.xl : space.md }}>
+        <View style={{ flexDirection: 'row', gap: 6, alignItems: 'flex-end', backgroundColor: t.card, borderRadius: 26, borderWidth: 1, borderColor: t.border, padding: 5 }}>
+          <IconButton icon={ic('plus', 'add')} label="Attach files" size={42} bg={t.surface} color={t.muted} onPress={() => open('Attach to this chat', [
+            { label: 'Files', onPress: () => attach(pickDocuments) }, { label: 'Photos', onPress: () => attach(() => pickPhoto(false)) },
+            { label: 'Take a photo', onPress: () => attach(() => pickPhoto(true)) }, { label: 'Cancel' }])} />
+          <TextInput value={text} onChangeText={setText} placeholder={code ? `Ask about ${code}…` : 'Ask anything…'} placeholderTextColor={t.muted} multiline
+            style={{ flex: 1, color: t.text, paddingHorizontal: 6, paddingVertical: 10, maxHeight: 160, fontSize: 16, fontFamily: font.body, ...(Platform.OS === 'web' ? { outlineStyle: 'none' } as object : {}) }} />
+          {live
+            ? <IconButton icon={ic('stop.fill', 'stop')} label="Stop" size={42} bg={t.text} color={t.bg} onPress={() => abort.current?.abort()} />
+            : <IconButton icon={ic('arrow.up', 'arrow_upward')} label="Send" size={42} bg={text.trim() ? accent : t.surface} color={text.trim() ? '#FFFFFF' : t.muted} onPress={() => send(text)} />}
+        </View>
       </View>
     </KeyboardAvoidingView>
   );

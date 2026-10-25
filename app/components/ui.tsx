@@ -1,14 +1,19 @@
 // Shared building blocks so every screen looks and feels the same.
 import { SymbolView } from 'expo-symbols';
 import * as Haptics from 'expo-haptics';
-import { useEffect, useState, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import {
   ActivityIndicator, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View,
   type PressableProps, type StyleProp, type TextInputProps, type TextStyle, type ViewStyle,
 } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring, withTiming } from 'react-native-reanimated';
 import Svg, { Circle } from 'react-native-svg';
-import { font, radius, space, tint, type, useTheme } from '@/lib/theme';
+import { font, ink, radius, space, tint, type, useTheme } from '@/lib/theme';
+
+/** Inside a course, buttons, tabs and links take the course's colour. */
+const AccentCtx = createContext<string | null>(null);
+export const AccentProvider = AccentCtx.Provider;
+export const useAccent = () => { const t = useTheme(); const c = useContext(AccentCtx); return { color: c ?? t.accent, custom: !!c }; };
 
 export const haptic = {
   tap: () => { if (Platform.OS !== 'web') Haptics.selectionAsync().catch(() => {}); },
@@ -88,9 +93,10 @@ export function Button({ title, onPress, kind = 'primary', disabled, loading, st
   title: string; onPress?: () => void; kind?: ButtonKind; disabled?: boolean; loading?: boolean; style?: StyleProp<ViewStyle>; icon?: IconName; small?: boolean; color?: string;
 }) {
   const t = useTheme();
-  const main = color ?? t.accent;
+  const acc = useAccent();
+  const main = color ?? acc.color;
   const bg = { primary: main, secondary: 'transparent', soft: tint(main, t.dark ? 0.22 : 0.12), danger: t.danger, ghost: 'transparent', highlight: t.highlight }[kind];
-  const fg = { primary: color ? '#FFFFFF' : t.onAccent, secondary: main, soft: main, danger: '#FFFFFF', ghost: t.muted, highlight: t.onHighlight }[kind];
+  const fg = { primary: color || acc.custom ? '#FFFFFF' : t.onAccent, secondary: ink(main, t), soft: ink(main, t), danger: '#FFFFFF', ghost: t.muted, highlight: t.onHighlight }[kind];
   return (
     <Pressy accessibilityRole="button" onPress={onPress} disabled={disabled || loading}
       style={[{
@@ -111,6 +117,7 @@ export function Button({ title, onPress, kind = 'primary', disabled, loading, st
 export function Field(props: TextInputProps & { label?: string; hint?: string; error?: string }) {
   const t = useTheme();
   const [focused, setFocused] = useState(false);
+  const acc = useAccent();
   const { label, hint, error, style, onFocus, onBlur, ...rest } = props;
   return (
     <View style={{ gap: 6 }}>
@@ -118,7 +125,7 @@ export function Field(props: TextInputProps & { label?: string; hint?: string; e
       <TextInput placeholderTextColor={tint(t.muted, 0.8)}
         onFocus={(e) => { setFocused(true); onFocus?.(e); }} onBlur={(e) => { setFocused(false); onBlur?.(e); }}
         style={[{
-          borderColor: error ? t.danger : focused ? t.accent : t.border, borderWidth: focused ? 2 : 1, borderRadius: radius.md,
+          borderColor: error ? t.danger : focused ? acc.color : t.border, borderWidth: focused ? 2 : 1, borderRadius: radius.md,
           paddingHorizontal: focused ? 13 : 14, paddingVertical: focused ? 12 : 13, color: t.text, backgroundColor: t.card,
           fontSize: 16, fontFamily: font.body, ...(Platform.OS === 'web' ? { outlineStyle: 'none' } as object : {}),
         }, style]}
@@ -182,8 +189,8 @@ export function Meter({ label, used, limit, color }: { label: string; used: numb
 }
 
 export function Progress({ value, color }: { value: number; color?: string }) {
-  const t = useTheme();
-  return <Bar value={value} color={color ?? t.accent} />;
+  const acc = useAccent();
+  return <Bar value={value} color={color ?? acc.color} />;
 }
 
 /** A circular progress ring with something in the middle. */
@@ -220,14 +227,15 @@ export function Check({ checked, onPress, color, size = 26 }: { checked: boolean
 
 export function Segments<K extends string>({ items, value, onChange, color }: { items: { key: K; label: string; color?: string }[]; value: K; onChange: (k: K) => void; color?: string }) {
   const t = useTheme();
+  const acc = useAccent();
   return (
     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingVertical: 2 }}>
       {items.map((it) => {
-        const on = value === it.key, c = it.color ?? color ?? t.accent;
+        const on = value === it.key, c = it.color ?? color ?? acc.color;
         return (
           <Pressy key={it.key} onPress={() => onChange(it.key)} accessibilityRole="tab" accessibilityState={{ selected: on }}
             style={{ paddingVertical: 9, paddingHorizontal: 15, borderRadius: radius.pill, backgroundColor: on ? c : t.card, borderWidth: 1, borderColor: on ? c : t.border }}>
-            <Text style={{ color: on ? '#FFFFFF' : t.text, fontSize: 14, fontFamily: font.semi }}>{it.label}</Text>
+            <Text style={{ color: on ? (c === t.accent && !acc.custom && !it.color && !color ? t.onAccent : '#FFFFFF') : t.text, fontSize: 14, fontFamily: font.semi }}>{it.label}</Text>
           </Pressy>
         );
       })}
@@ -240,7 +248,7 @@ export function Pill({ label, color }: { label: string; color?: string }) {
   const c = color ?? t.muted;
   return (
     <View style={{ alignSelf: 'flex-start', paddingHorizontal: 9, paddingVertical: 3, borderRadius: radius.pill, backgroundColor: tint(c, t.dark ? 0.2 : 0.12) }}>
-      <Text style={{ fontSize: 12, fontFamily: font.semi, color: c }}>{label}</Text>
+      <Text style={{ fontSize: 12, fontFamily: font.semi, color: ink(c, t) }}>{label}</Text>
     </View>
   );
 }
@@ -260,9 +268,10 @@ export function Row({ children, style }: { children: ReactNode; style?: StylePro
 
 export function LinkText({ title, onPress, color }: { title: string; onPress: () => void; color?: string }) {
   const t = useTheme();
+  const acc = useAccent();
   return (
     <Pressable onPress={() => { haptic.tap(); onPress(); }} hitSlop={8} accessibilityRole="button" style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}>
-      <Text style={{ color: color ?? t.accent, fontSize: 15, fontFamily: font.semi }}>{title}</Text>
+      <Text style={{ color: color ?? ink(acc.color, t), fontSize: 15, fontFamily: font.semi }}>{title}</Text>
     </Pressable>
   );
 }

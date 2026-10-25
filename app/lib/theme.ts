@@ -75,3 +75,13 @@ export const type = {
   label: { fontFamily: font.semi, fontSize: 13.5, lineHeight: 18 },
   tiny: { fontFamily: font.semi, fontSize: 11.5, lineHeight: 14 },
 };
+
+/** Mix a colour towards white (amt 0-1). */
+export const lighten = (hex: string, amt: number) => {
+  const h = hex.replace('#', '').slice(0, 6);
+  const c = [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16)).map((v) => Math.round(v + (255 - v) * amt));
+  return `#${c.map((v) => v.toString(16).padStart(2, '0')).join('')}`;
+};
+
+/** A course colour made readable as text on the current background. */
+export const ink = (hex: string, t: { dark: boolean }) => (t.dark ? lighten(hex, 0.38) : hex);

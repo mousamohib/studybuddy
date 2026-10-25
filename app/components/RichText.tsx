@@ -5,7 +5,7 @@ import katex from 'katex';
 import { marked } from 'marked';
 import { useMemo } from 'react';
 
-type Colors = { text: string; muted: string; accent: string; surface: string; border: string };
+type Colors = { text: string; muted: string; accent: string; surface: string; border: string; mark?: string };
 
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
 
@@ -33,11 +33,12 @@ export default function RichText({ markdown, colors, fontSize = 15 }: { markdown
   const css = `
     :root { color-scheme: light dark; }
     html, body { margin: 0; padding: 0; background: transparent; }
-    .rt { color: ${colors.text}; font: ${fontSize}px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; overflow-wrap: anywhere; -webkit-text-size-adjust: 100%; }
+    .rt { color: ${colors.text}; font: ${fontSize}px/1.6 Figtree, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; overflow-wrap: anywhere; -webkit-text-size-adjust: 100%; }
     .rt > :first-child { margin-top: 0; } .rt > :last-child { margin-bottom: 0; }
-    .rt h1, .rt h2, .rt h3 { line-height: 1.3; margin: 1.2em 0 .4em; } .rt h1 { font-size: 1.35em; } .rt h2 { font-size: 1.2em; } .rt h3 { font-size: 1.05em; }
+    .rt h1, .rt h2, .rt h3 { font-family: 'Bricolage Grotesque', Figtree, sans-serif; font-weight: 700; letter-spacing: -.01em; line-height: 1.25; margin: 1.2em 0 .4em; } .rt h1 { font-size: 1.35em; } .rt h2 { font-size: 1.2em; } .rt h3 { font-size: 1.05em; }
     .rt p { margin: .55em 0; } .rt ul, .rt ol { padding-left: 1.3em; margin: .5em 0; } .rt li { margin: .2em 0; }
     .rt a { color: ${colors.accent}; }
+    .rt strong { font-weight: 700; background: linear-gradient(transparent 60%, ${colors.mark ?? 'rgba(255,212,59,.5)'} 60%); padding: 0 1px; }
     .rt code { font-family: ui-monospace, Menlo, monospace; font-size: .9em; background: ${colors.surface}; padding: .1em .3em; border-radius: 4px; }
     .rt pre { background: ${colors.surface}; padding: 10px 12px; border-radius: 8px; overflow-x: auto; }
     .rt pre code { background: none; padding: 0; }
@@ -49,6 +50,7 @@ export default function RichText({ markdown, colors, fontSize = 15 }: { markdown
   `;
   return (
     <>
+      <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700&family=Figtree:wght@400;600;700&display=swap" />
       <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.47/dist/katex.min.css" />
       <style>{css}</style>
       <div className="rt" dangerouslySetInnerHTML={{ __html: html }} />

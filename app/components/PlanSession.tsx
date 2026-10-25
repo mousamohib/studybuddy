@@ -5,7 +5,7 @@ import { openNewChat } from '@/lib/chats';
 import type { Course, Deadline } from '@/lib/data';
 import type { Session } from '@/lib/reminders';
 import { supabase } from '@/lib/supabase';
-import { radius, space, tint, useTheme } from '@/lib/theme';
+import { ink, radius, space, tint, useTheme } from '@/lib/theme';
 
 export type FullSession = Session & { topics?: string[]; goal?: string; deadlineId?: string; materials?: string[] };
 
@@ -44,7 +44,7 @@ export function PlanSession({ s, done, colour, onToggle, courses, deadlines }: {
         </Row>
         <T variant="strong" style={{ textDecorationLine: done ? 'line-through' : 'none' }}>{s.title}</T>
         {s.topics?.length ? <T variant="small" muted>{s.topics.join(', ')}</T> : null}
-        {s.goal && !done ? <T variant="small" color={colour}>Goal: {s.goal}</T> : null}
+        {s.goal && !done ? <T variant="small" color={ink(colour, t)}>Goal: {s.goal}</T> : null}
       </View>
       {!done && <View style={{ alignSelf: 'center' }}><IconButton icon={ic('play.fill', 'play_arrow')} label={`Start ${s.title}`} bg={colour} color="#FFFFFF" size={44} onPress={start} /></View>}
     </View>
