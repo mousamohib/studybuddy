@@ -1,10 +1,11 @@
 import { router } from 'expo-router';
-import { useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
+import { useRef, useState } from 'react';
+import { ActivityIndicator, Platform, Pressable, StyleSheet, View } from 'react-native';
 import { Button, Card, Field, Icon, ic, LinkText, Pill, Pressy, Row, Segments, T, useAccent } from '@/components/ui';
 import { useMenu, useNotice } from '@/components/Menu';
 import { DateField } from '@/components/DateField';
 import { GroupProject } from './GroupProject';
+import { useFileDrop } from '@/lib/useFileDrop';
 import { ApiError, deleteMaterial, ERROR_UPGRADE, pickDocuments, pickPhoto, uploadMaterial, type Picked } from '@/lib/api';
 import { fmtDay, isAssignment, KIND_LABEL, localToISO, type Deadline, type Material } from '@/lib/data';
 import { supabase } from '@/lib/supabase';
@@ -37,6 +38,10 @@ export function Materials({ data }: { data: CourseData }) {
   const [newAsg, setNewAsg] = useState({ label: '', due: '', covers: '' });
   const current = tab === 'study' || tab === 'new' ? null : assignments.find((d) => d.id === tab) ?? null;
   const files = data.materials.filter((m) => (current ? m.deadline_id === current.id : !m.deadline_id));
+
+  const dropRef = useRef<View>(null);
+  const [over, setOver] = useState(false);
+  useFileDrop(dropRef, (files) => { if (tab !== 'new') upload(async () => files); }, setOver);
 
   async function upload(get: () => Promise<Picked[]>) {
     let picked: Picked[];
@@ -79,7 +84,14 @@ export function Materials({ data }: { data: CourseData }) {
     ...assignments.map((d) => ({ key: d.id, label: `${d.label || KIND_LABEL[d.kind]} · ${fmtDay(d.due_at)}` })), { key: 'new', label: '+ Assignment' }];
 
   return (
-    <View style={{ gap: space.md }}>
+    <View ref={dropRef} style={{ gap: space.md }}>
+      {over && (
+        <View pointerEvents="none" style={{ position: 'absolute', zIndex: 10, left: -8, right: -8, top: -8, bottom: -8, borderRadius: radius.lg, backgroundColor: tint(accent, 0.12), borderWidth: 3, borderStyle: 'dashed', borderColor: accent, alignItems: 'center', justifyContent: 'center' }}>
+          <View style={{ backgroundColor: accent, paddingHorizontal: 20, paddingVertical: 12, borderRadius: radius.md }}>
+            <T variant="heading" color="#FFFFFF">Drop to add to {current ? current.label || 'this assignment' : 'study material'}</T>
+          </View>
+        </View>
+      )}
       <Segments items={items} value={tab} onChange={setTab} />
       {tab === 'new' ? (
         <View style={{ gap: space.md }}>
@@ -133,7 +145,7 @@ export function Materials({ data }: { data: CourseData }) {
           {uploading > 0 && <Row><ActivityIndicator color={accent} /><T variant="small" muted>Uploading {uploading} file{uploading > 1 ? 's' : ''}…</T></Row>}
           <View style={{ gap: 6 }}>
             <Button title={current ? 'Add handout, code or group progress' : files.length ? 'Add more files' : 'Add your first file'} icon={ic('arrow.up.doc.fill', 'upload_file')} onPress={addMenu} />
-            <T variant="small" muted style={{ textAlign: 'center' }}>PDF, PowerPoint, Word, zip, code or photos of notes</T>
+            <T variant="small" muted style={{ textAlign: 'center' }}>PDF, PowerPoint, Word, zip, code or photos of notes{Platform.OS === 'web' ? '. Or drag files anywhere here.' : ''}</T>
           </View>
           {current && <AssignmentInfo d={current} />}
         </>

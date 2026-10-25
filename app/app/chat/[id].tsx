@@ -202,7 +202,7 @@ export default function ChatScreen() {
       <Stack.Screen options={{ title: chat?.title ?? 'Chat', headerRight: () => <IconButton icon={ic('ellipsis', 'more_horiz')} label="Chat options" size={36} onPress={chatMenu} /> }} />
       <FlatList ref={list} data={items} keyExtractor={(_, i) => String(i)}
         onContentSizeChange={() => live?.user !== undefined && list.current?.scrollToEnd({ animated: false })}
-        contentContainerStyle={{ padding: space.lg, gap: space.lg, flexGrow: 1 }}
+        contentContainerStyle={{ padding: space.lg, gap: space.lg, flexGrow: 1, width: '100%', maxWidth: 820, alignSelf: 'center' }}
         ListHeaderComponent={chat ? (
           <Row>
             {code ? <CourseTag code={code} color={accent} /> : <Pill label="General" />}
@@ -256,7 +256,7 @@ export default function ChatScreen() {
       />
       {attaching ? <Row style={{ paddingHorizontal: space.lg }}><ActivityIndicator size="small" /><T variant="small" muted>{attaching}</T></Row> : null}
       {msgs.length > 0 && !live && (
-        <View style={{ paddingHorizontal: space.md }}>
+        <View style={{ paddingHorizontal: space.md, width: '100%', maxWidth: 820, alignSelf: 'center' }}>
           <FlatList horizontal data={QUICK} keyExtractor={(q) => q.label} showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingVertical: 6 }}
             renderItem={({ item }) => (
               <Pressy onPress={() => send(item.text)} style={{ paddingVertical: 8, paddingHorizontal: 14, borderRadius: 999, backgroundColor: tint(accent, t.dark ? 0.2 : 0.1) }}>
@@ -265,7 +265,7 @@ export default function ChatScreen() {
             )} />
         </View>
       )}
-      <View style={{ padding: space.md, paddingBottom: Platform.OS === 'ios' ? space.xl : space.md }}>
+      <View style={{ padding: space.md, paddingBottom: Platform.OS === 'ios' ? space.xl : space.md, width: '100%', maxWidth: 820, alignSelf: 'center' }}>
         <View style={{ flexDirection: 'row', gap: 6, alignItems: 'flex-end', backgroundColor: t.surface, borderRadius: 26, padding: 5 }}>
           <IconButton icon={ic('plus', 'add')} label="Attach files" size={42} bg={t.bg} color={t.muted} onPress={() => open('Attach to this chat', [
             { label: 'Files', onPress: () => attach(pickDocuments) }, { label: 'Photos', onPress: () => attach(() => pickPhoto(false)) },

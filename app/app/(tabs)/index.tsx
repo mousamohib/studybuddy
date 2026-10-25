@@ -1,9 +1,12 @@
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { ActivityIndicator, ScrollView, Text, View } from 'react-native';
-import { Button, Card, CourseTag, Empty, Field, IconButton, ic, ListRow, Pressy, Ring, Row, Screen, Section, T, LinkText } from '@/components/ui';
+import { Button, Card, CourseTag, Empty, Field, Icon, IconButton, ic, ListRow, Pressy, Ring, Row, Screen, Section, T, LinkText } from '@/components/ui';
 import { PlanSession, type FullSession } from '@/components/PlanSession';
 import { Rich } from '@/components/Rich';
+import { Confetti } from '@/components/Confetti';
+import { useWide } from '@/lib/useWide';
+import { openNewChat } from '@/lib/chats';
 import { useAccount } from '@/lib/auth';
 import { daysUntil, fmtDay, fmtTime, KIND_LABEL, localISO } from '@/lib/data';
 import { usePlan } from '@/lib/usePlan';
@@ -39,6 +42,37 @@ export default function Today() {
   const [first, ...rest] = upcoming;
   const name = (session?.user.user_metadata?.display_name as string | undefined)?.split(' ')[0];
   const codeOf = (id: string) => p.courses.find((c) => c.id === id)?.code ?? '';
+  const wide = useWide();
+  const [burst, setBurst] = useState({ n: 0, big: false });
+  const nextUp = sessions.find((s) => !p.plan?.done[s.id]) as FullSession | undefined;
+
+  // Days in a row with at least one session ticked off (today counts once something is done).
+  const streak = (() => {
+    const days = [...(p.plan?.days ?? [])].filter((d) => d.date <= todayKey).sort((a, b) => b.date.localeCompare(a.date));
+    let n = 0;
+    for (const d of days) {
+      const any = d.sessions.some((s) => p.plan?.done[s.id]);
+      if (any) n++; else if (d.date !== todayKey) break;
+    }
+    return n;
+  })();
+
+  function toggle(id: string) {
+    const willBeDone = !p.plan?.done[id];
+    p.toggleDone(id);
+    if (willBeDone) {
+      const left = sessions.filter((s) => s.id !== id && !p.plan?.done[s.id]).length;
+      setBurst((b) => ({ n: b.n + 1, big: left === 0 }));
+    }
+  }
+
+  async function startNext() {
+    if (!nextUp) return;
+    const course = p.courses.find((c) => c.code === nextUp.course);
+    const mode = nextUp.type === 'assignment' ? 'assignment' : nextUp.type === 'coding' ? 'coding' : nextUp.type === 'practice' || nextUp.type === 'review' ? 'practice' : 'lesson';
+    const d = p.deadlines.find((x) => x.id === nextUp.deadlineId) ?? null;
+    await openNewChat({ courseId: course?.id ?? null, mode: mode === 'assignment' && !d ? 'lesson' : mode, topic: `${nextUp.title}${nextUp.topics?.length ? ` — topics: ${nextUp.topics.join(', ')}` : ''}`, deadline: d, courseCode: nextUp.course, title: nextUp.title }).catch(() => {});
+  }
 
   async function ask(text = req) {
     if (!text.trim()) return;
@@ -53,13 +87,34 @@ export default function Today() {
         <T variant="small" muted>{new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}</T>
         <T variant="display">{greeting()}{name ? `,\n${name}` : ''}</T>
       </View>
-      {sessions.length > 0 && (
-        <Ring value={doneCount / sessions.length} size={74} stroke={9} color={doneCount === sessions.length ? t.good : t.accent}>
-          <T variant="heading" style={{ fontSize: 18 }}>{doneCount}/{sessions.length}</T>
-        </Ring>
-      )}
+      <Row style={{ gap: space.md, flexWrap: 'nowrap' }}>
+        {streak > 0 && (
+          <View style={{ alignItems: 'center', backgroundColor: tint('#F07A12', t.dark ? 0.2 : 0.12), borderRadius: radius.md, paddingHorizontal: 12, paddingVertical: 8, transform: [{ rotate: '3deg' }] }}>
+            <Icon name={ic('flame.fill', 'local_fire_department')} size={22} color="#F07A12" />
+            <Text style={{ fontFamily: font.display, fontSize: 20, color: '#F07A12', lineHeight: 22 }}>{streak}</Text>
+            <T variant="tiny" muted>{streak === 1 ? 'day' : 'days'}</T>
+          </View>
+        )}
+        {sessions.length > 0 && (
+          <Ring value={doneCount / sessions.length} size={74} stroke={9} color={doneCount === sessions.length ? t.good : t.accent}>
+            <T variant="heading" style={{ fontSize: 18 }}>{doneCount}/{sessions.length}</T>
+          </Ring>
+        )}
+      </Row>
     </Row>
   );
+
+  const startBtn = nextUp ? (
+    <Pressy onPress={startNext} style={{ flexDirection: 'row', alignItems: 'center', gap: space.md, backgroundColor: t.text, borderRadius: radius.xl, padding: space.lg, paddingRight: space.xl }}>
+      <View style={{ width: 54, height: 54, borderRadius: 27, backgroundColor: p.colourOf(nextUp.course), alignItems: 'center', justifyContent: 'center' }}>
+        <Icon name={ic('play.fill', 'play_arrow')} size={28} color="#FFFFFF" />
+      </View>
+      <View style={{ flex: 1 }}>
+        <Text style={{ fontFamily: font.semi, fontSize: 13, color: t.bg, opacity: 0.7 }}>Start next · {nextUp.course} · {nextUp.minutes} min</Text>
+        <Text numberOfLines={1} style={{ fontFamily: font.display, fontSize: 22, color: t.bg, letterSpacing: -0.4 }}>{nextUp.title}</Text>
+      </View>
+    </Pressy>
+  ) : null;
 
   if (p.loaded && !p.courses.length && !p.busy) {
     return (
@@ -71,10 +126,7 @@ export default function Today() {
     );
   }
 
-  return (
-    <Screen>
-      {header}
-
+  const blocks = { countdown: <>
       {first && (() => {
         const code = codeOf(first.course_id), col = p.colourOf(code), n = daysUntil(first.due_at);
         return (
@@ -100,6 +152,7 @@ export default function Today() {
         );
       })()}
 
+</>, coming: <>
       {rest.length > 0 && (
         <Section title="Coming up">
           <View>
@@ -122,6 +175,7 @@ export default function Today() {
         </Section>
       )}
 
+</>, trial: <>
       {trialEndsAt && (
         <Pressy onPress={() => router.push('/paywall')} style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm, backgroundColor: tint(t.highlight, t.dark ? 0.18 : 0.45), borderRadius: radius.md, paddingVertical: 10, paddingHorizontal: space.md }}>
           <T variant="label" style={{ flex: 1 }}>Pro trial: {Math.max(0, daysUntil(trialEndsAt))} days left</T>
@@ -129,6 +183,7 @@ export default function Today() {
         </Pressy>
       )}
 
+</>, plan: <>
       <Section title="Today's plan" action={
         <Row>
           {minsLeft > 0 && <T variant="small" muted>{Math.floor(minsLeft / 60) ? `${Math.floor(minsLeft / 60)}h ` : ''}{minsLeft % 60 ? `${minsLeft % 60}m` : ''} left</T>}
@@ -142,7 +197,7 @@ export default function Today() {
         )}
         {p.error ? <T variant="small" color={t.danger}>{p.error}</T> : null}
         {sessions.map((s) => (
-          <PlanSession key={s.id} s={s as FullSession} done={!!p.plan?.done[s.id]} colour={p.colourOf(s.course)} onToggle={() => p.toggleDone(s.id)} courses={p.courses} deadlines={p.deadlines} />
+          <PlanSession key={s.id} s={s as FullSession} done={!!p.plan?.done[s.id]} colour={p.colourOf(s.course)} onToggle={() => toggle(s.id)} courses={p.courses} deadlines={p.deadlines} />
         ))}
         {!sessions.length && !p.busy && (
           <Card flat><T muted>{p.plan?.generated_at ? 'Nothing planned today. Rest, or get ahead on something.' : upcoming.length ? 'Your plan will appear here shortly.' : 'Add deadlines to a course and your plan builds itself.'}</T></Card>
@@ -158,6 +213,7 @@ export default function Today() {
         )}
       </Section>
 
+</>, change: <>
       <Card style={{ gap: space.md }}>
         <T variant="heading">Change the plan</T>
         <T variant="small" muted>Say it in your own words. The plan updates around your deadlines.</T>
@@ -187,6 +243,7 @@ export default function Today() {
         )}
       </Card>
 
+</>, why: <>
       {p.plan?.summary ? (
         <Card style={{ gap: space.sm }}>
           <Pressy haptics={false} onPress={() => setShowWhy(!showWhy)} style={{ flexDirection: 'row', alignItems: 'center' }}>
@@ -197,7 +254,40 @@ export default function Today() {
         </Card>
       ) : null}
 
-      <Button title="Open the calendar" kind="soft" icon={ic('calendar', 'calendar_month')} onPress={() => router.push('/calendar')} />
-    </Screen>
+</> } satisfies Record<string, ReactNode>;
+
+  return (
+    <View style={{ flex: 1 }}>
+      <Screen wide>
+        {header}
+        {wide ? (
+          <Row style={{ alignItems: 'flex-start', flexWrap: 'nowrap', gap: space.xxl }}>
+            <View style={{ flex: 3, gap: space.lg }}>
+              {startBtn}
+              {blocks.plan}
+              {blocks.change}
+            </View>
+            <View style={{ flex: 2, gap: space.lg }}>
+              {blocks.countdown}
+              {blocks.coming}
+              {blocks.trial}
+              {blocks.why}
+            </View>
+          </Row>
+        ) : (
+          <>
+            {blocks.countdown}
+            {startBtn}
+            {blocks.coming}
+            {blocks.trial}
+            {blocks.plan}
+            {blocks.change}
+            {blocks.why}
+            <Button title="Open the calendar" kind="soft" icon={ic('calendar', 'calendar_month')} onPress={() => router.push('/calendar')} />
+          </>
+        )}
+      </Screen>
+      <Confetti burst={burst.n} big={burst.big} />
+    </View>
   );
 }

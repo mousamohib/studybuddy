@@ -12,6 +12,7 @@ import { useCourse } from '@/components/course/useCourse';
 import { openNewChat } from '@/lib/chats';
 import { courseColour, daysUntil, KIND_LABEL, type Course } from '@/lib/data';
 import { supabase } from '@/lib/supabase';
+import { useWide } from '@/lib/useWide';
 import { font, radius, space, useTheme } from '@/lib/theme';
 
 type Section = 'materials' | 'deadlines' | 'revision' | 'chats' | 'memory' | 'settings';
@@ -35,6 +36,7 @@ export default function CourseHub() {
   const data = useCourse(id);
   const [tab, setTab] = useState<Section>(section && SECTIONS.some((s) => s.key === section) ? section : 'materials');
   const [col, setCol] = useState<string | null>(null);
+  const wide = useWide();
 
   // The course's colour depends on its place in the list, so look that up once.
   useEffect(() => {
@@ -54,8 +56,8 @@ export default function CourseHub() {
 
   return (
     <Screen>
-      <Stack.Screen options={{ title: '', headerStyle: { backgroundColor: colour }, headerTintColor: '#FFFFFF' }} />
-      <View style={{ backgroundColor: colour, marginHorizontal: -space.lg, marginTop: -space.lg, paddingHorizontal: space.lg, paddingBottom: space.xl, paddingTop: space.sm, gap: space.lg, borderBottomLeftRadius: radius.xl, borderBottomRightRadius: radius.xl, overflow: 'hidden' }}>
+      <Stack.Screen options={wide ? { title: c.code, headerStyle: { backgroundColor: t.bg }, headerTintColor: t.text } : { title: '', headerStyle: { backgroundColor: colour }, headerTintColor: '#FFFFFF' }} />
+      <View style={[{ backgroundColor: colour, gap: space.lg, overflow: 'hidden' }, wide ? { borderRadius: radius.xl, padding: space.xl } : { marginHorizontal: -space.lg, marginTop: -space.lg, paddingHorizontal: space.lg, paddingBottom: space.xl, paddingTop: space.sm, borderBottomLeftRadius: radius.xl, borderBottomRightRadius: radius.xl }]}>
         <View style={{ position: 'absolute', right: -50, top: -60, width: 200, height: 200, borderRadius: 100, backgroundColor: 'rgba(255,255,255,0.1)' }} />
         <View style={{ gap: 4 }}>
           <Text style={{ color: '#fff', fontFamily: font.display, fontSize: 38, lineHeight: 42, letterSpacing: -1.2 }}>{c.code}</Text>

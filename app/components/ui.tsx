@@ -9,6 +9,7 @@ import {
 import Animated, { useAnimatedStyle, useSharedValue, withSpring, withTiming } from 'react-native-reanimated';
 import Svg, { Circle } from 'react-native-svg';
 import { font, ink, radius, space, tint, type, useTheme } from '@/lib/theme';
+import { useWide } from '@/lib/useWide';
 
 /** Inside a course, buttons, tabs and links take the course's colour. */
 const AccentCtx = createContext<string | null>(null);
@@ -52,7 +53,8 @@ export function Pressy({ children, style, scaleTo = 0.97, onPress, haptics = tru
 
 export function Screen({ children, scroll = true, style, wide }: { children: ReactNode; scroll?: boolean; style?: StyleProp<ViewStyle>; wide?: boolean }) {
   const t = useTheme();
-  const inner: ViewStyle = { width: '100%', maxWidth: wide ? 1000 : 760, alignSelf: 'center' };
+  const big = useWide();
+  const inner: ViewStyle = { width: '100%', maxWidth: wide ? 1100 : 820, alignSelf: 'center', ...(big ? { paddingHorizontal: space.xxl, paddingTop: space.xxl } : {}) };
   if (!scroll) return <View style={[{ flex: 1, backgroundColor: t.bg, padding: space.lg }, inner, style]}>{children}</View>;
   return (
     <ScrollView style={{ flex: 1, backgroundColor: t.bg }} contentInsetAdjustmentBehavior="automatic"
