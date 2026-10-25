@@ -2,7 +2,8 @@
 import { createContext, useContext, useState, type ReactNode } from 'react';
 import { Modal, Pressable, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { radius, space, useTheme } from '@/lib/theme';
+import { font, radius, space, useTheme } from '@/lib/theme';
+import Animated, { SlideInDown } from 'react-native-reanimated';
 
 export type MenuItem = { label: string; onPress?: () => void; destructive?: boolean };
 type Open = (title: string | null, items: MenuItem[], message?: string) => void;
@@ -20,17 +21,24 @@ export function MenuProvider({ children }: { children: ReactNode }) {
     <Ctx.Provider value={{ open, confirm }}>
       {children}
       <Modal visible={!!state} transparent animationType="fade" onRequestClose={close}>
-        <Pressable style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.35)', justifyContent: 'flex-end' }} onPress={close}>
-          <Pressable style={{ backgroundColor: t.card, borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg, padding: space.lg, paddingBottom: space.lg + insets.bottom, gap: 4, maxWidth: 560, width: '100%', alignSelf: 'center' }}>
-            {state?.title ? <Text style={{ color: t.text, fontSize: 16, fontWeight: '600', marginBottom: 4 }}>{state.title}</Text> : null}
-            {state?.message ? <Text style={{ color: t.muted, fontSize: 14, marginBottom: 8 }}>{state.message}</Text> : null}
-            {state?.items.map((it) => (
-              <Pressable key={it.label} onPress={() => { close(); it.onPress?.(); }}
-                style={({ pressed }) => ({ paddingVertical: 13, paddingHorizontal: 4, borderTopWidth: 1, borderColor: t.border, opacity: pressed ? 0.6 : 1 })}>
-                <Text style={{ fontSize: 16, color: it.destructive ? t.danger : it.label === 'Cancel' ? t.muted : t.text }}>{it.label}</Text>
-              </Pressable>
-            ))}
-          </Pressable>
+        <Pressable style={{ flex: 1, backgroundColor: t.overlay, justifyContent: 'flex-end' }} onPress={close}>
+          <Animated.View entering={SlideInDown.springify().damping(20)} style={{ maxWidth: 560, width: '100%', alignSelf: 'center' }}>
+            <Pressable style={{ backgroundColor: t.card, borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl, padding: space.lg, paddingTop: 10, paddingBottom: space.lg + insets.bottom, gap: 4 }}>
+              <View style={{ alignSelf: 'center', width: 40, height: 5, borderRadius: 3, backgroundColor: t.border, marginBottom: space.md }} />
+              {state?.title ? <Text style={{ color: t.text, fontSize: 19, fontFamily: font.heading, marginBottom: 2 }}>{state.title}</Text> : null}
+              {state?.message ? <Text style={{ color: t.muted, fontSize: 15, fontFamily: font.body, lineHeight: 21, marginBottom: 8 }}>{state.message}</Text> : null}
+              {state?.items.map((it) => {
+                const cancel = it.label === 'Cancel' || it.label === 'OK' || it.label === 'Done';
+                return (
+                  <Pressable key={it.label} onPress={() => { close(); it.onPress?.(); }}
+                    style={({ pressed }) => ({ paddingVertical: 14, paddingHorizontal: space.md, borderRadius: radius.md, marginTop: cancel ? 6 : 0, alignItems: cancel ? 'center' : 'flex-start',
+                      backgroundColor: cancel ? t.surface : pressed ? t.surface : 'transparent' })}>
+                    <Text style={{ fontSize: 16, fontFamily: cancel ? font.bold : font.medium, color: it.destructive ? t.danger : cancel && it.label !== 'Cancel' ? t.accent : t.text }}>{it.label}</Text>
+                  </Pressable>
+                );
+              })}
+            </Pressable>
+          </Animated.View>
         </Pressable>
       </Modal>
     </Ctx.Provider>

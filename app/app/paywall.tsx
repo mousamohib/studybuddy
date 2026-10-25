@@ -1,52 +1,80 @@
 import { router } from 'expo-router';
-import { Alert, View } from 'react-native';
-import { Button, Card, Screen, T } from '@/components/ui';
+import { useState } from 'react';
+import { Text, View } from 'react-native';
+import { Button, Card, Icon, ic, Pressy, Row, Screen, Stickers, T } from '@/components/ui';
+import { useNotice } from '@/components/Menu';
 import { useAccount } from '@/lib/auth';
 import { LIMITS, USAGE_LABELS, type UsageField } from '@/lib/limits';
-import { space, useTheme } from '@/lib/theme';
+import { font, radius, space, tint, useTheme } from '@/lib/theme';
 
 // PAYMENTS PLACEHOLDER. The real purchase flow (RevenueCat in the app, Stripe on the web) plugs in at
 // `startPurchase`. It must end by writing plan='pro' to the user's row in the `subscriptions` table
 // (server side), then calling refresh(). Nothing else in the app needs to change.
-async function startPurchase(period: 'monthly' | 'yearly'): Promise<boolean> {
-  Alert.alert('Coming soon', `Payments aren't connected yet (${period}). This button is a placeholder.`);
+async function startPurchase(_period: 'monthly' | 'yearly'): Promise<boolean> {
   return false;
 }
 
 export default function Paywall() {
   const t = useTheme();
-  const { plan, refresh } = useAccount();
+  const notice = useNotice();
+  const { plan, trialEndsAt, refresh } = useAccount();
+  const [period, setPeriod] = useState<'monthly' | 'yearly'>('yearly');
   const rows: UsageField[] = ['uploads', 'tutor_messages', 'weekly_sheets', 'exam_sheets', 'papers'];
 
-  async function buy(period: 'monthly' | 'yearly') {
+  async function buy() {
     if (await startPurchase(period)) { await refresh(); router.back(); }
+    else notice('Payments are coming soon', "Subscriptions aren't switched on yet. Everything in Pro is unlocked during your trial.");
   }
+
+  const Option = ({ k, title, price, note }: { k: 'monthly' | 'yearly'; title: string; price: string; note?: string }) => {
+    const on = period === k;
+    return (
+      <Pressy onPress={() => setPeriod(k)} accessibilityRole="radio" accessibilityState={{ checked: on }}
+        style={{ flex: 1, padding: space.lg, borderRadius: radius.lg, borderWidth: 2, borderColor: on ? t.accent : t.border, backgroundColor: on ? t.accentSoft : t.card, gap: 4 }}>
+        {note ? <View style={{ position: 'absolute', top: -11, right: 12, backgroundColor: t.highlight, borderRadius: 6, paddingHorizontal: 7, paddingVertical: 2 }}><Text style={{ fontFamily: font.bold, fontSize: 11.5, color: t.onHighlight }}>{note}</Text></View> : null}
+        <T variant="label" muted>{title}</T>
+        <T variant="heading">{price}</T>
+      </Pressy>
+    );
+  };
 
   return (
     <Screen>
-      <T variant="title">Study without limits</T>
-      <T muted>Pro gives you room for a whole semester of courses, files, tutoring and exam prep.</T>
-      <Card>
-        <View style={{ flexDirection: 'row', paddingBottom: space.sm }}>
+      <View style={{ alignItems: 'flex-start', gap: space.md, paddingTop: space.md }}>
+        <Stickers size={44} />
+        <T variant="display">A whole semester, no limits</T>
+        <T muted style={{ fontSize: 17, lineHeight: 25 }}>Room for every course, file and exam, with a tutor you can ask as often as you need.</T>
+      </View>
+
+      <Card style={{ padding: 0, overflow: 'hidden', gap: 0 }}>
+        <Row style={{ paddingHorizontal: space.lg, paddingVertical: space.md, backgroundColor: t.surface, flexWrap: 'nowrap' }}>
           <T variant="label" muted style={{ flex: 1 }}>Each month</T>
-          <T variant="label" muted style={{ width: 64, textAlign: 'right' }}>Free</T>
-          <T variant="label" style={{ width: 72, textAlign: 'right', color: t.accent }}>Pro</T>
-        </View>
-        {[['Courses', LIMITS.free.courses, LIMITS.pro.courses] as const, ...rows.map((r) => [USAGE_LABELS[r], LIMITS.free[r], LIMITS.pro[r]] as const)].map(([label, f, p]) => (
-          <View key={label} style={{ flexDirection: 'row', paddingVertical: 6, borderTopWidth: 1, borderColor: t.border }}>
+          <T variant="label" muted style={{ width: 56, textAlign: 'center' }}>Free</T>
+          <T variant="label" color={t.accent} style={{ width: 84, textAlign: 'center' }}>Pro</T>
+        </Row>
+        {[['Courses', LIMITS.free.courses, LIMITS.pro.courses] as const, ...rows.map((r) => [USAGE_LABELS[r], LIMITS.free[r], LIMITS.pro[r]] as const)].map(([label, f, p], i) => (
+          <Row key={label} style={{ paddingHorizontal: space.lg, paddingVertical: 12, borderTopWidth: i ? 1 : 0, borderColor: t.border, flexWrap: 'nowrap' }}>
             <T variant="small" style={{ flex: 1 }}>{label}</T>
-            <T variant="small" muted style={{ width: 64, textAlign: 'right' }}>{f}</T>
-            <T variant="small" style={{ width: 72, textAlign: 'right', fontWeight: '600' }}>{p >= 1000 ? 'Unlimited' : p}</T>
-          </View>
+            <T variant="small" muted style={{ width: 56, textAlign: 'center' }}>{f}</T>
+            <View style={{ width: 84, alignItems: 'center' }}>
+              <View style={{ backgroundColor: tint(t.accent, 0.12), borderRadius: 6, paddingHorizontal: 8, paddingVertical: 2 }}>
+                <Text style={{ fontFamily: font.bold, fontSize: 13, color: t.accent }}>{p >= 1000 ? 'No limit' : p}</Text>
+              </View>
+            </View>
+          </Row>
         ))}
       </Card>
-      {plan === 'pro' ? (
-        <Card><T>You're on Pro. Thanks for supporting StudyBuddy.</T></Card>
+
+      {plan === 'pro' && !trialEndsAt ? (
+        <Card tint={t.good}><Row><Icon name={ic('checkmark.seal.fill', 'verified')} color={t.good} /><T variant="strong">You're on Pro. Thanks for supporting StudyBuddy.</T></Row></Card>
       ) : (
         <View style={{ gap: space.md }}>
-          <Button title="C$9.99 / £6.99 a month" onPress={() => buy('monthly')} />
-          <Button title="C$69.99 / £49.99 a year (save 40%)" kind="secondary" onPress={() => buy('yearly')} />
-          <T variant="small" muted>New accounts start with a 7-day Pro trial. Cancel any time in your app store settings.</T>
+          <Row style={{ flexWrap: 'nowrap', gap: space.md, paddingTop: 8 }}>
+            <Option k="monthly" title="Monthly" price="C$9.99 / £6.99" />
+            <Option k="yearly" title="Yearly" price="C$69.99 / £49.99" note="Save 40%" />
+          </Row>
+          <Button title={period === 'yearly' ? 'Get Pro for a year' : 'Get Pro monthly'} onPress={buy} />
+          <T variant="small" muted style={{ textAlign: 'center' }}>{trialEndsAt ? `Your free Pro trial runs until ${new Date(trialEndsAt).toLocaleDateString(undefined, { month: 'long', day: 'numeric' })}. ` : ''}Cancel any time in your app store settings.</T>
         </View>
       )}
     </Screen>

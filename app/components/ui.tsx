@@ -96,7 +96,7 @@ export function Button({ title, onPress, kind = 'primary', disabled, loading, st
   const acc = useAccent();
   const main = color ?? acc.color;
   const bg = { primary: main, secondary: 'transparent', soft: tint(main, t.dark ? 0.22 : 0.12), danger: t.danger, ghost: 'transparent', highlight: t.highlight }[kind];
-  const fg = { primary: color || acc.custom ? '#FFFFFF' : t.onAccent, secondary: ink(main, t), soft: ink(main, t), danger: '#FFFFFF', ghost: t.muted, highlight: t.onHighlight }[kind];
+  const fg = { primary: color || acc.custom ? '#FFFFFF' : t.onAccent, secondary: ink(main, t), soft: ink(main, t), danger: '#FFFFFF', ghost: color ? ink(color, t) : t.muted, highlight: t.onHighlight }[kind];
   return (
     <Pressy accessibilityRole="button" onPress={onPress} disabled={disabled || loading}
       style={[{

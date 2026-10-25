@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { Pressable, View } from 'react-native';
-import { Button, Card, Field, LinkText, Row, T } from '@/components/ui';
+import { View } from 'react-native';
+import { Button, Card, Check, Field, IconButton, ic, LinkText, Row, T, useAccent } from '@/components/ui';
 import { openNewChat } from '@/lib/chats';
 import type { MemoryItem } from '@/lib/data';
 import { supabase } from '@/lib/supabase';
@@ -9,6 +9,7 @@ import type { CourseData } from './useCourse';
 
 export function Memory({ data }: { data: CourseData }) {
   const t = useTheme();
+  const accent = useAccent().color;
   const [fact, setFact] = useState('');
   const [rev, setRev] = useState('');
   const c = data.course!;
@@ -26,34 +27,34 @@ export function Memory({ data }: { data: CourseData }) {
   return (
     <View style={{ gap: space.lg }}>
       <View style={{ gap: space.sm }}>
-        <T variant="label" muted>Memory</T>
+        <T variant="heading">What the tutor remembers</T>
         <T variant="small" muted>Every {c.code} chat sees these. The tutor adds facts when you tell it something lasting, like a weak spot or exam details.</T>
         {facts.map((m) => (
-          <Card key={m.id} style={{ flexDirection: 'row', alignItems: 'flex-start', gap: space.md }}>
+          <Card key={m.id} style={{ flexDirection: 'row', alignItems: 'center', gap: space.md, padding: space.md }}>
+            <View style={{ width: 4, alignSelf: 'stretch', borderRadius: 2, backgroundColor: accent }} />
             <T style={{ flex: 1 }}>{m.text}</T>
             <LinkText title="Forget" color={t.muted} onPress={() => remove(m)} />
           </Card>
         ))}
         <Row style={{ flexWrap: 'nowrap' }}>
           <View style={{ flex: 1 }}><Field placeholder="Something the tutor should always remember" value={fact} onChangeText={setFact} /></View>
-          <Button title="Add" kind="secondary" onPress={() => add('fact', fact, () => setFact(''))} />
+          <Button title="Add" kind="soft" onPress={() => add('fact', fact, () => setFact(''))} />
         </Row>
       </View>
       <View style={{ gap: space.sm }}>
-        <T variant="label" muted>Revisit later</T>
+        <T variant="heading">Revisit later</T>
         <T variant="small" muted>Topics to come back to. The plan fits them in after the syllabus is covered.</T>
         {revisit.map((m) => (
-          <Card key={m.id} style={{ flexDirection: 'row', alignItems: 'center', gap: space.md, opacity: m.done ? 0.5 : 1 }}>
-            <Pressable onPress={() => toggle(m)} accessibilityRole="checkbox" accessibilityState={{ checked: m.done }}
-              style={{ width: 22, height: 22, borderRadius: 4, borderWidth: 1.5, borderColor: m.done ? t.good : t.muted, backgroundColor: m.done ? t.good : 'transparent' }} />
+          <Card key={m.id} style={{ flexDirection: 'row', alignItems: 'center', gap: space.md, padding: space.md, opacity: m.done ? 0.5 : 1 }}>
+            <Check checked={m.done} onPress={() => toggle(m)} color={accent} />
             <T style={{ flex: 1, textDecorationLine: m.done ? 'line-through' : 'none' }}>{m.text}</T>
-            {!m.done && <LinkText title="Study it" onPress={() => openNewChat({ courseId: c.id, mode: 'lesson', topic: `${m.text} (a topic I flagged to revisit: re-teach it from the start, then give me practice questions)`, courseCode: c.code, title: `Revisit: ${m.text.slice(0, 50)}` })} />}
-            <LinkText title="✕" color={t.muted} onPress={() => remove(m)} />
+            {!m.done && <Button title="Study it" small kind="soft" onPress={() => openNewChat({ courseId: c.id, mode: 'lesson', topic: `${m.text} (a topic I flagged to revisit: re-teach it from the start, then give me practice questions)`, courseCode: c.code, title: `Revisit: ${m.text.slice(0, 50)}` })} />}
+            <IconButton icon={ic('xmark', 'close')} label="Remove" size={32} bg={t.surface} color={t.muted} onPress={() => remove(m)} />
           </Card>
         ))}
         <Row style={{ flexWrap: 'nowrap' }}>
           <View style={{ flex: 1 }}><Field placeholder="e.g. Harris corner derivation" value={rev} onChangeText={setRev} /></View>
-          <Button title="Add" kind="secondary" onPress={() => add('revisit', rev, () => setRev(''))} />
+          <Button title="Add" kind="soft" onPress={() => add('revisit', rev, () => setRev(''))} />
         </Row>
       </View>
     </View>

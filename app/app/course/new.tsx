@@ -2,7 +2,7 @@
 import { router, Stack } from 'expo-router';
 import { useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, View } from 'react-native';
-import { Button, Card, Field, Row, Screen, T } from '@/components/ui';
+import { Button, Card, Field, ic, Row, Screen, Stickers, T } from '@/components/ui';
 import { useMenu } from '@/components/Menu';
 import { ApiError, ERROR_UPGRADE, pickDocuments, pickPhoto, runJob, uploadMaterial, waitMaterial, type Picked } from '@/lib/api';
 import { useAccount } from '@/lib/auth';
@@ -107,16 +107,14 @@ export default function NewCourse() {
       <Stack.Screen options={{ title: 'Add a course' }} />
       {step === 'start' && (
         <>
-          <Card style={{ gap: space.md }}>
-            <T variant="heading">Start from the syllabus</T>
-            <T muted>Upload the course outline or syllabus. StudyBuddy finds every deadline and exam, what each covers, the exam rules and the AI policy. You check it before anything is saved.</T>
-            <Button title="Upload syllabus file" onPress={() => fromSyllabus(async () => (await pickDocuments()).slice(0, 1))} />
-            <Button title="Photo of the syllabus" kind="secondary" onPress={() => fromSyllabus(() => pickPhoto(false))} />
-          </Card>
-          <Card style={{ gap: space.sm }}>
-            <T style={{ fontWeight: '600' }}>No syllabus?</T>
-            <T variant="small" muted>Add the course by name and enter deadlines yourself.</T>
-            <Button title="Add manually" kind="ghost" onPress={() => setStep('manual')} />
+          <Stickers size={48} />
+          <T variant="display">Start from the syllabus</T>
+          <T muted style={{ fontSize: 17, lineHeight: 25 }}>Upload the course outline. StudyBuddy finds every deadline and exam, what each covers, the exam rules and the AI policy. You check it all before anything is saved.</T>
+          <Button title="Upload syllabus file" icon={ic('arrow.up.doc.fill', 'upload_file')} onPress={() => fromSyllabus(async () => (await pickDocuments()).slice(0, 1))} />
+          <Button title="Take a photo of it" kind="soft" icon={ic('camera.fill', 'photo_camera')} onPress={() => fromSyllabus(() => pickPhoto(false))} />
+          <Card flat style={{ flexDirection: 'row', alignItems: 'center', gap: space.md }}>
+            <View style={{ flex: 1 }}><T variant="strong">No syllabus?</T><T variant="small" muted>Add the course by name and type in the deadlines.</T></View>
+            <Button title="Add by hand" small kind="secondary" onPress={() => setStep('manual')} />
           </Card>
           {plan === 'free' && <T variant="small" muted>The free plan includes 2 courses.</T>}
         </>

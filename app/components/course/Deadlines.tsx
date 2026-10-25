@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import { ActivityIndicator, Pressable, View } from 'react-native';
-import { Button, Card, Field, LinkText, Pill, Row, T } from '@/components/ui';
+import { Button, Card, Field, LinkText, Pill, Row, T, useAccent } from '@/components/ui';
+import { Text } from 'react-native';
 import { useMenu, useNotice } from '@/components/Menu';
 import { ApiError, runJob } from '@/lib/api';
 import { daysUntil, fmtDay, fmtTime, isoToLocalInput, KIND_LABEL, localToISO, relDays, type Deadline, type DeadlineKind } from '@/lib/data';
 import { refreshPhoneSchedule } from '@/lib/reminders';
 import { supabase } from '@/lib/supabase';
 import { space, useTheme } from '@/lib/theme';
+import { font as F, ink as INK, tint as TINT } from '@/lib/theme';
 import type { CourseData } from './useCourse';
 
 const KINDS: DeadlineKind[] = ['assignment', 'quiz', 'midterm', 'final', 'test', 'lab', 'project', 'other'];
@@ -117,9 +119,9 @@ export function Deadlines({ data }: { data: CourseData }) {
           </Row>
         </Card>
       ) : (
-        <Row>
-          <Button title="Add deadline" kind="secondary" onPress={() => setDraft({ kind: 'assignment', label: '', due: '', covers: '' })} />
-          <Button title="Paste prof's message" kind="ghost" onPress={() => setPaste('')} />
+        <Row style={{ flexWrap: 'nowrap' }}>
+          <Button title="Add" style={{ flex: 1 }} icon={{ ios: 'plus', android: 'add', web: 'add' }} onPress={() => setDraft({ kind: 'assignment', label: '', due: '', covers: '' })} />
+          <Button title="Paste prof's message" kind="soft" style={{ flex: 2 }} icon={{ ios: 'doc.on.clipboard', android: 'content_paste', web: 'content_paste' }} onPress={() => setPaste('')} />
         </Row>
       )}
       {reading && <Row><ActivityIndicator /><T variant="small" muted>Reading the message…</T></Row>}
@@ -133,16 +135,29 @@ export function Deadlines({ data }: { data: CourseData }) {
 
 function DeadlineCard({ d, onEdit, onDone }: { d: Deadline; onEdit: () => void; onDone: () => void }) {
   const t = useTheme();
-  const n = daysUntil(d.due_at);
+  const accent = useAccent().color;
+  const n = daysUntil(d.due_at), due = new Date(d.due_at), soon = !d.done && n <= 3 && n >= 0;
   return (
-    <Card style={{ gap: 4, opacity: d.done ? 0.55 : 1 }}>
-      <Row style={{ justifyContent: 'space-between' }}>
-        <Row><Pill label={KIND_LABEL[d.kind]} /><T style={{ fontWeight: '600' }}>{d.label || KIND_LABEL[d.kind]}</T></Row>
-        <T variant="small" style={{ color: !d.done && n <= 3 && n >= 0 ? t.danger : t.muted }}>{d.done ? 'done' : relDays(n)}</T>
-      </Row>
-      <T variant="small" muted>{fmtDay(d.due_at)}, {fmtTime(d.due_at)}</T>
-      {d.covers ? <T variant="small">{d.covers}</T> : <T variant="small" muted>Add what it covers so the plan can target it.</T>}
-      <Row style={{ marginTop: 4 }}><LinkText title="Edit" onPress={onEdit} /><LinkText title={d.done ? 'Mark not done' : 'Mark done'} onPress={onDone} color={t.muted} /></Row>
+    <Card style={{ flexDirection: 'row', gap: space.md, opacity: d.done ? 0.55 : 1, padding: space.md }}>
+      <View style={{ width: 58, borderRadius: 14, overflow: 'hidden', borderWidth: 1, borderColor: TINT(accent, 0.3), alignSelf: 'flex-start' }}>
+        <View style={{ backgroundColor: accent, paddingVertical: 3, alignItems: 'center' }}>
+          <Text style={{ color: '#fff', fontFamily: F.bold, fontSize: 11.5 }}>{due.toLocaleDateString(undefined, { month: 'short' }).toUpperCase()}</Text>
+        </View>
+        <View style={{ alignItems: 'center', paddingVertical: 4, backgroundColor: t.card }}>
+          <Text style={{ color: t.text, fontFamily: F.display, fontSize: 24, lineHeight: 28 }}>{due.getDate()}</Text>
+          <Text style={{ color: t.muted, fontFamily: F.semi, fontSize: 11 }}>{due.toLocaleDateString(undefined, { weekday: 'short' })}</Text>
+        </View>
+      </View>
+      <View style={{ flex: 1, gap: 4 }}>
+        <Row style={{ justifyContent: 'space-between', flexWrap: 'nowrap' }}>
+          <Pill label={KIND_LABEL[d.kind]} color={accent} />
+          <T variant="label" color={soon ? t.danger : t.muted}>{d.done ? 'Done' : relDays(n)}</T>
+        </Row>
+        <T variant="heading" style={{ fontSize: 17 }}>{d.label || KIND_LABEL[d.kind]}</T>
+        <T variant="small" muted>{fmtTime(d.due_at)}{d.covers ? ` · ${d.covers}` : ''}</T>
+        {!d.covers && <T variant="small" color={INK(t.warn, t)}>Add what it covers so the plan can target it.</T>}
+        <Row style={{ marginTop: 4, gap: space.lg }}><LinkText title="Edit" onPress={onEdit} /><LinkText title={d.done ? 'Mark not done' : 'Mark done'} onPress={onDone} color={t.muted} /></Row>
+      </View>
     </Card>
   );
 }

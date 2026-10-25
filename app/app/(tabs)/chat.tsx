@@ -1,19 +1,33 @@
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Pressable, View } from 'react-native';
-import { Button, Card, Field, Pill, Row, Screen, T } from '@/components/ui';
+import { Text, TextInput, View, Platform } from 'react-native';
+import { CourseTag, Icon, IconButton, ic, Pressy, Row, Screen, Segments, Stickers, T } from '@/components/ui';
 import { useNotice } from '@/components/Menu';
 import { openNewChat } from '@/lib/chats';
-import { courseColour, MODE_LABEL, type ChatRow, type Course } from '@/lib/data';
+import { courseColour, MODE_LABEL, type ChatMode, type ChatRow, type Course } from '@/lib/data';
 import { supabase } from '@/lib/supabase';
-import { space, useTheme } from '@/lib/theme';
+import { font, ink, radius, space, tint, useTheme } from '@/lib/theme';
+
+const MODE_ICON: Record<ChatMode, { ios: string; material: string }> = {
+  ask: { ios: 'questionmark.bubble.fill', material: 'help' },
+  lesson: { ios: 'graduationcap.fill', material: 'school' },
+  practice: { ios: 'pencil.and.list.clipboard', material: 'quiz' },
+  coding: { ios: 'chevron.left.forwardslash.chevron.right', material: 'code' },
+  assignment: { ios: 'doc.text.fill', material: 'assignment' },
+};
+
+function when(iso: string) {
+  const d = new Date(iso), now = new Date();
+  const days = Math.floor((now.setHours(0, 0, 0, 0) - new Date(d).setHours(0, 0, 0, 0)) / 86400000);
+  return days <= 0 ? d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' }) : days === 1 ? 'Yesterday' : d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+}
 
 export default function ChatTab() {
   const t = useTheme();
   const notice = useNotice();
   const [chats, setChats] = useState<ChatRow[]>([]);
   const [courses, setCourses] = useState<Course[]>([]);
-  const [filter, setFilter] = useState<string | 'all' | 'general'>('all');
+  const [filter, setFilter] = useState<string>('all');
   const [q, setQ] = useState('');
 
   useFocusEffect(useCallback(() => {
@@ -25,45 +39,66 @@ export default function ChatTab() {
 
   const shown = chats.filter((c) => filter === 'all' || (filter === 'general' ? !c.course_id : c.course_id === filter));
   const course = (id: string | null) => courses.find((c) => c.id === id);
+  const colOf = (id: string | null) => { const i = courses.findIndex((c) => c.id === id); return i >= 0 ? courseColour(courses[i], i) : t.accent; };
+  const sel = filter !== 'all' && filter !== 'general' ? course(filter) : undefined;
+  const accent = sel ? colOf(sel.id) : t.accent;
 
   async function ask() {
     if (!q.trim()) return;
-    const c = filter !== 'all' && filter !== 'general' ? course(filter) : undefined;
-    try { await openNewChat({ courseId: c?.id ?? null, mode: 'ask', topic: q, courseCode: c?.code }); setQ(''); }
+    try { await openNewChat({ courseId: sel?.id ?? null, mode: 'ask', topic: q, courseCode: sel?.code }); setQ(''); }
     catch (e) { notice("Couldn't start the chat", (e as Error).message); }
   }
 
   return (
     <Screen>
-      <T variant="title">Chats</T>
-      <Row>
-        {[{ id: 'all', label: 'All' }, ...courses.map((c) => ({ id: c.id, label: c.code })), { id: 'general', label: 'General' }].map((f) => (
-          <Pressable key={f.id} onPress={() => setFilter(f.id)} style={{ paddingVertical: 6, paddingHorizontal: 12, borderRadius: 999, backgroundColor: filter === f.id ? t.text : t.surface }}>
-            <T variant="small" style={{ color: filter === f.id ? t.bg : t.text, fontWeight: '600' }}>{f.label}</T>
-          </Pressable>
-        ))}
-      </Row>
-      <Card style={{ gap: space.sm }}>
-        <Field placeholder={filter !== 'all' && filter !== 'general' ? `Ask about ${course(filter)?.code}…` : 'Ask anything…'} value={q} onChangeText={setQ} multiline />
-        <Row><Button title="Ask" onPress={ask} disabled={!q.trim()} />
-          {filter !== 'all' && filter !== 'general' && <Button title="More chat types" kind="ghost" onPress={() => router.push({ pathname: '/course/[id]', params: { id: filter, section: 'chats' } })} />}
-        </Row>
-      </Card>
-      {shown.length === 0 && <T muted>No chats yet. Lessons, practice sets and assignment help start from a course, or from Start on a planned session.</T>}
-      {shown.map((ch) => {
-        const c = course(ch.course_id), i = courses.findIndex((x) => x.id === ch.course_id);
-        return (
-          <Pressable key={ch.id} onPress={() => router.push({ pathname: '/chat/[id]', params: { id: ch.id } })}>
-            <Card style={{ flexDirection: 'row', gap: space.md }}>
-              <View style={{ width: 4, borderRadius: 2, backgroundColor: c ? courseColour(c, i) : t.border }} />
-              <View style={{ flex: 1, gap: 4 }}>
-                <T style={{ fontWeight: '600' }}>{ch.title}</T>
-                <Row><Pill label={c?.code ?? 'General'} /><Pill label={MODE_LABEL[ch.mode]} /><T variant="small" muted>{new Date(ch.updated_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</T></Row>
+      <T variant="display">Tutor</T>
+      <View style={{ marginHorizontal: -space.lg, paddingHorizontal: space.lg }}>
+        <Segments value={filter} onChange={setFilter}
+          items={[{ key: 'all', label: 'All' }, ...courses.map((c, i) => ({ key: c.id, label: c.code, color: courseColour(c, i) })), { key: 'general', label: 'General' }]} />
+      </View>
+
+      <View style={{ backgroundColor: accent, borderRadius: radius.xl, padding: space.lg, gap: space.md, overflow: 'hidden' }}>
+        <View style={{ position: 'absolute', right: -30, top: -40, width: 140, height: 140, borderRadius: 70, backgroundColor: 'rgba(255,255,255,0.12)' }} />
+        <Text style={{ color: '#fff', fontFamily: font.heading, fontSize: 22 }}>{sel ? `Stuck on something in ${sel.code}?` : 'What are you stuck on?'}</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 6, backgroundColor: t.card, borderRadius: 22, padding: 5 }}>
+          <TextInput value={q} onChangeText={setQ} placeholder={sel ? `Ask about ${sel.code}…` : 'Ask anything…'} placeholderTextColor={t.muted} multiline onSubmitEditing={ask}
+            style={{ flex: 1, color: t.text, paddingHorizontal: 12, paddingVertical: 10, maxHeight: 120, fontSize: 16, fontFamily: font.body, ...(Platform.OS === 'web' ? { outlineStyle: 'none' } as object : {}) }} />
+          <IconButton icon={ic('arrow.up', 'arrow_upward')} label="Ask" size={42} bg={q.trim() ? accent : t.surface} color={q.trim() ? '#FFFFFF' : t.muted} onPress={ask} />
+        </View>
+        {sel && (
+          <Pressy onPress={() => router.push({ pathname: '/course/[id]', params: { id: sel.id, section: 'chats' } })} style={{ alignSelf: 'flex-start' }}>
+            <Text style={{ color: '#fff', fontFamily: font.semi, fontSize: 14, textDecorationLine: 'underline' }}>Lessons, practice sets and assignment help</Text>
+          </Pressy>
+        )}
+      </View>
+
+      {shown.length === 0 && (
+        <View style={{ alignItems: 'center', gap: space.md, paddingVertical: space.xl }}>
+          <Stickers size={40} />
+          <T muted style={{ textAlign: 'center', maxWidth: 300 }}>No chats yet. Ask above, or tap play on a session in your plan to start a lesson.</T>
+        </View>
+      )}
+      <View style={{ gap: space.sm }}>
+        {shown.map((ch) => {
+          const c = course(ch.course_id), col = colOf(ch.course_id), mi = MODE_ICON[ch.mode];
+          return (
+            <Pressy key={ch.id} onPress={() => router.push({ pathname: '/chat/[id]', params: { id: ch.id } })}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: space.md, backgroundColor: t.card, borderRadius: radius.lg, borderWidth: 1, borderColor: t.border, padding: space.md }}>
+              <View style={{ width: 44, height: 44, borderRadius: 14, backgroundColor: tint(col, t.dark ? 0.22 : 0.12), alignItems: 'center', justifyContent: 'center' }}>
+                <Icon name={ic(mi.ios, mi.material)} size={22} color={ink(col, t)} />
               </View>
-            </Card>
-          </Pressable>
-        );
-      })}
+              <View style={{ flex: 1, gap: 4 }}>
+                <T variant="strong" numberOfLines={1}>{ch.title}</T>
+                <Row style={{ gap: 6 }}>
+                  {c ? <CourseTag code={c.code} color={col} /> : null}
+                  <T variant="small" muted>{MODE_LABEL[ch.mode]} · {when(ch.updated_at)}</T>
+                </Row>
+              </View>
+              <Icon name={ic('chevron.right', 'chevron_right')} size={18} color={t.muted} />
+            </Pressy>
+          );
+        })}
+      </View>
     </Screen>
   );
 }
