@@ -56,7 +56,7 @@ export function Settings({ data }: { data: CourseData }) {
         <Field label="AI policy from the syllabus" placeholder="e.g. AI allowed for learning, not for graded code" value={f.ai_policy} onChangeText={(v) => setF({ ...f, ai_policy: v })} multiline />
         <Button title="Save" onPress={save} />
       </Card>
-      <Button title="Delete course" kind="danger" onPress={del} />
+      <Button title="Delete course" kind="ghost" color={t.danger} onPress={del} />
     </View>
   );
 }

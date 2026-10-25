@@ -1,11 +1,11 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, View } from 'react-native';
-import { Button, Card, Field, Pill, Row, T } from '@/components/ui';
+import { View } from 'react-native';
+import { Button, Card, Field, Icon, ic, Pressy, Row, Segments, T, useAccent } from '@/components/ui';
 import { useNotice } from '@/components/Menu';
 import { isAssignment, MODE_LABEL, type ChatMode } from '@/lib/data';
 import { openNewChat } from '@/lib/chats';
-import { space, useTheme } from '@/lib/theme';
+import { ink, radius, space, tint, useTheme } from '@/lib/theme';
 import type { CourseData } from './useCourse';
 
 const MODES: ChatMode[] = ['ask', 'lesson', 'practice', 'coding', 'assignment'];
@@ -16,6 +16,7 @@ const PLACEHOLDER: Record<ChatMode, string> = {
 
 export function Chats({ data }: { data: CourseData }) {
   const t = useTheme();
+  const accent = useAccent().color;
   const notice = useNotice();
   const [mode, setMode] = useState<ChatMode>('ask');
   const [topic, setTopic] = useState('');
@@ -35,28 +36,30 @@ export function Chats({ data }: { data: CourseData }) {
     <View style={{ gap: space.md }}>
       <Card style={{ gap: space.md }}>
         <T variant="heading">New chat</T>
-        <Row>{MODES.map((m) => (
-          <Pressable key={m} onPress={() => setMode(m)} style={{ paddingVertical: 6, paddingHorizontal: 12, borderRadius: 999, backgroundColor: mode === m ? t.text : t.surface }}>
-            <T variant="small" style={{ color: mode === m ? t.bg : t.text, fontWeight: '600' }}>{MODE_LABEL[m]}</T>
-          </Pressable>
-        ))}</Row>
+        <Segments items={MODES.map((m) => ({ key: m, label: MODE_LABEL[m] }))} value={mode} onChange={setMode} />
         {mode === 'assignment' && (asg.length ? (
-          <Row>{asg.map((d) => (
-            <Pressable key={d.id} onPress={() => setAsgId(d.id)} style={{ paddingVertical: 6, paddingHorizontal: 10, borderRadius: 6, borderWidth: 1, borderColor: (asgId ?? asg[0].id) === d.id ? t.accent : t.border }}>
-              <T variant="small">{d.label || d.kind}</T>
-            </Pressable>
-          ))}</Row>
+          <Row>{asg.map((d) => {
+            const on = (asgId ?? asg[0].id) === d.id;
+            return (
+              <Pressy key={d.id} onPress={() => setAsgId(d.id)} style={{ paddingVertical: 7, paddingHorizontal: 12, borderRadius: radius.sm, borderWidth: 1.5, borderColor: on ? accent : t.border, backgroundColor: on ? tint(accent, 0.1) : 'transparent' }}>
+                <T variant="label" color={on ? ink(accent, t) : t.text}>{d.label || d.kind}</T>
+              </Pressy>
+            );
+          })}</Row>
         ) : <T variant="small" muted>No assignments in this course yet.</T>)}
         <Field placeholder={PLACEHOLDER[mode]} value={topic} onChangeText={setTopic} multiline />
-        <Button title="Start chat" onPress={start} />
+        <Button title="Start chat" icon={ic('arrow.right', 'arrow_forward')} onPress={start} />
       </Card>
       {data.chats.map((ch) => (
-        <Pressable key={ch.id} onPress={() => router.push({ pathname: '/chat/[id]', params: { id: ch.id } })}>
-          <Card style={{ gap: 4 }}>
-            <T style={{ fontWeight: '600' }} >{ch.title}</T>
-            <Row><Pill label={MODE_LABEL[ch.mode]} /><T variant="small" muted>{new Date(ch.updated_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</T></Row>
-          </Card>
-        </Pressable>
+        <Pressy key={ch.id} onPress={() => router.push({ pathname: '/chat/[id]', params: { id: ch.id } })}
+          style={{ flexDirection: 'row', alignItems: 'center', gap: space.md, backgroundColor: t.card, borderRadius: radius.lg, borderWidth: 1, borderColor: t.border, padding: space.md }}>
+          <View style={{ width: 4, alignSelf: 'stretch', borderRadius: 2, backgroundColor: accent }} />
+          <View style={{ flex: 1, gap: 2 }}>
+            <T variant="strong" numberOfLines={1}>{ch.title}</T>
+            <T variant="small" muted>{MODE_LABEL[ch.mode]} · {new Date(ch.updated_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</T>
+          </View>
+          <Icon name={ic('chevron.right', 'chevron_right')} size={18} color={t.muted} />
+        </Pressy>
       ))}
     </View>
   );

@@ -3,7 +3,7 @@ import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { DocView } from '@/components/DocView';
-import { Card, LinkText, Pill, Row, Screen, T } from '@/components/ui';
+import { Button, Card, IconButton, ic, Pill, Row, Screen, T } from '@/components/ui';
 import { useMenu, useNotice } from '@/components/Menu';
 import type { Doc } from '@/lib/data';
 import { downloadMarkdown, downloadPdf, shareLink, stopSharing } from '@/lib/export';
@@ -47,13 +47,17 @@ export default function DocScreen() {
 
   return (
     <Screen>
-      <Stack.Screen options={{ title: KIND[doc.kind], headerRight: () => <LinkText title="•••" onPress={menu} /> }} />
+      <Stack.Screen options={{ title: KIND[doc.kind], headerRight: () => <IconButton icon={ic('ellipsis', 'more_horiz')} label="More" size={36} onPress={menu} /> }} />
       <View style={{ gap: 4 }}>
-        <T variant="title" style={{ fontSize: 24 }}>{title}</T>
-        <Row><Pill label={doc.courses?.code ?? ''} /><T variant="small" muted>{new Date(doc.created_at).toLocaleDateString()}</T>{doc.share_token ? <Pill label="Shared by link" color={t.accent} /> : null}</Row>
+        <T variant="title">{title}</T>
+        <Row>{doc.courses?.code ? <Pill label={doc.courses.code} color={t.accent} /> : null}<T variant="small" muted>{new Date(doc.created_at).toLocaleDateString()}</T>{doc.share_token ? <Pill label="Shared by link" color={t.accent} /> : null}</Row>
       </View>
-      <Row><LinkText title="Download PDF" onPress={pdf} /><LinkText title="Share" onPress={share} /><LinkText title="More" onPress={menu} color={t.muted} /></Row>
-      <DocView kind={doc.kind} body={doc.body ?? ''} />
+      <Row style={{ flexWrap: 'nowrap' }}>
+        <Button title="PDF" small icon={ic('arrow.down.doc.fill', 'download')} onPress={pdf} style={{ flex: 1 }} />
+        <Button title="Share" small kind="soft" icon={ic('link', 'link')} onPress={share} style={{ flex: 1 }} />
+        <Button title="Copy" small kind="soft" icon={ic('doc.on.doc', 'content_copy')} onPress={async () => { await Clipboard.setStringAsync(doc.body ?? ''); notice('Copied', 'Equations are kept as LaTeX.'); }} style={{ flex: 1 }} />
+      </Row>
+      <Card style={{ padding: space.lg }}><DocView kind={doc.kind} body={doc.body ?? ''} /></Card>
       {doc.meta?.skipped?.length ? (
         <Card style={{ gap: space.sm }}>
           <T variant="label" muted>Left out as not important for the exam</T>

@@ -77,6 +77,17 @@ Share links point to the web version. Once it's hosted (for example `npx expo ex
 - Dates are typed as `YYYY-MM-DD HH:MM`.
 - Big files take a little while: each server task can run for about 150 seconds on Supabase's free plan.
 
+## Live updates while Claude works
+
+Clone the repo (`git clone https://github.com/mousamohib/studybuddy.git studybuddy-live`), copy your `app/.env` into it, run `npx expo start` in `app`, then in a second terminal run:
+
+```
+powershell -ExecutionPolicy Bypass -File scripts\live.ps1     # Windows
+./scripts/live.sh                                            # Mac
+```
+
+It pulls new changes every 10 seconds and the app refreshes itself. If it says new packages were added, restart `npx expo start`.
+
 ## Turning on real AI (later)
 
 1. Create an Anthropic API account, add a small amount of prepaid credit, and set a **monthly spend limit** in its console.
