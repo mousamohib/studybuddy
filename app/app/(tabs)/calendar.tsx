@@ -1,13 +1,14 @@
 import { useMemo, useState } from 'react';
 import { Pressable, View, useWindowDimensions } from 'react-native';
-import { Card, LinkText, Row, Screen, T } from '@/components/ui';
+import { Button, Card, CourseTag, IconButton, ic, Row, Screen, T } from '@/components/ui';
 import { useNotice } from '@/components/Menu';
 import { PlanSession, type FullSession } from '@/components/PlanSession';
 import { daysUntil, fmtDay, fmtTime, KIND_LABEL, localISO } from '@/lib/data';
 import { askCalendarPermission, refreshPhoneSchedule } from '@/lib/reminders';
 import { supabase } from '@/lib/supabase';
 import { usePlan } from '@/lib/usePlan';
-import { radius, space, useTheme } from '@/lib/theme';
+import { font, radius, space, tint, useTheme } from '@/lib/theme';
+import { Text } from 'react-native';
 import { Platform } from 'react-native';
 
 const DOW = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -31,7 +32,7 @@ export default function CalendarTab() {
   for (let i = 0; i < lead; i++) cells.push(null);
   for (let d = 1; d <= new Date(month.getFullYear(), month.getMonth() + 1, 0).getDate(); d++) cells.push(new Date(month.getFullYear(), month.getMonth(), d));
   while (cells.length % 7) cells.push(null);
-  const cellW = (Math.min(width, 720) - space.lg * 2) / 7;
+  const cellW = Math.floor((Math.min(width, 760) - space.lg * 2 - space.sm * 2 - 2) / 7);
   const todayKey = localISO(new Date());
   const selSessions = byDate.get(sel) ?? [];
   const selDue = dueBy.get(sel) ?? [];
@@ -47,52 +48,59 @@ export default function CalendarTab() {
 
   return (
     <Screen>
-      <Row style={{ justifyContent: 'space-between' }}>
-        <T variant="title">{month.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}</T>
+      <Row style={{ justifyContent: 'space-between', flexWrap: 'nowrap' }}>
+        <View>
+          <T variant="small" muted>{month.getFullYear()}</T>
+          <T variant="display">{month.toLocaleDateString(undefined, { month: 'long' })}</T>
+        </View>
         <Row>
-          <LinkText title="‹" onPress={() => setMonth(new Date(month.getFullYear(), month.getMonth() - 1, 1))} />
-          <LinkText title="Today" onPress={() => { const d = new Date(); setMonth(new Date(d.getFullYear(), d.getMonth(), 1)); setSel(localISO(d)); }} />
-          <LinkText title="›" onPress={() => setMonth(new Date(month.getFullYear(), month.getMonth() + 1, 1))} />
+          <IconButton icon={ic('chevron.left', 'chevron_left')} label="Previous month" onPress={() => setMonth(new Date(month.getFullYear(), month.getMonth() - 1, 1))} />
+          <Button title="Today" small kind="soft" onPress={() => { const d = new Date(); setMonth(new Date(d.getFullYear(), d.getMonth(), 1)); setSel(localISO(d)); }} />
+          <IconButton icon={ic('chevron.right', 'chevron_right')} label="Next month" onPress={() => setMonth(new Date(month.getFullYear(), month.getMonth() + 1, 1))} />
         </Row>
       </Row>
-      <View>
-        <View style={{ flexDirection: 'row' }}>{DOW.map((d) => <T key={d} variant="label" muted style={{ width: cellW, textAlign: 'center' }}>{d}</T>)}</View>
+      <Card style={{ padding: space.sm, gap: 4 }}>
+        <View style={{ flexDirection: 'row' }}>{DOW.map((d) => <T key={d} variant="tiny" muted style={{ width: cellW, textAlign: 'center', paddingVertical: 6 }}>{d}</T>)}</View>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
           {cells.map((d, i) => {
-            if (!d) return <View key={i} style={{ width: cellW, height: 64 }} />;
+            if (!d) return <View key={i} style={{ width: cellW, height: 62 }} />;
             const k = localISO(d), ss = byDate.get(k) ?? [], dues = dueBy.get(k) ?? [];
-            const mins = ss.reduce((a, s) => a + s.minutes, 0);
-            const isSel = k === sel, isToday = k === todayKey;
+            const isSel = k === sel, isToday = k === todayKey, past = k < todayKey;
             return (
               <Pressable key={i} onPress={() => setSel(k)} accessibilityLabel={`${fmtDay(k)}: ${ss.length} sessions, ${dues.length} due`}
-                style={{ width: cellW, height: 64, padding: 3 }}>
-                <View style={{ flex: 1, borderRadius: radius.sm, borderWidth: isSel ? 2 : 1, borderColor: isSel ? t.accent : t.border, padding: 3, gap: 2, opacity: k < todayKey ? 0.5 : 1, backgroundColor: t.card }}>
-                  <T variant="small" style={{ fontWeight: isToday ? '700' : '400', color: isToday ? t.accent : t.text }}>{d.getDate()}</T>
-                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 2 }}>
-                    {dues.map((x) => <View key={x.id} style={{ height: 4, width: '100%', borderRadius: 2, backgroundColor: p.colourOf(codeOf(x.course_id)) }} />)}
-                    {ss.slice(0, 4).map((s) => <View key={s.id} style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: p.colourOf(s.course), opacity: p.plan?.done[s.id] ? 0.3 : 1 }} />)}
-                  </View>
-                  {mins > 0 && <T variant="small" muted style={{ fontSize: 10, marginTop: 'auto' }}>{Math.round(mins / 6) / 10}h</T>}
+                style={{ width: cellW, height: 62, alignItems: 'center', paddingTop: 4, gap: 4, borderRadius: radius.md, backgroundColor: isSel ? tint(t.highlight, t.dark ? 0.22 : 0.5) : 'transparent', opacity: past && !isSel ? 0.45 : 1 }}>
+                <View style={{ width: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center', backgroundColor: isToday ? t.accent : 'transparent' }}>
+                  <Text style={{ fontFamily: isToday || isSel ? font.bold : font.medium, fontSize: 15, color: isToday ? t.onAccent : t.text }}>{d.getDate()}</Text>
+                </View>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 3, justifyContent: 'center', paddingHorizontal: 4 }}>
+                  {dues.map((x) => <View key={x.id} style={{ height: 5, width: cellW - 14, borderRadius: 3, backgroundColor: p.colourOf(codeOf(x.course_id)) }} />)}
+                  {ss.slice(0, 4).map((s) => <View key={s.id} style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: p.colourOf(s.course), opacity: p.plan?.done[s.id] ? 0.3 : 1 }} />)}
                 </View>
               </Pressable>
             );
           })}
         </View>
-      </View>
-      <T variant="heading">{fmtDay(sel)}</T>
-      {selDue.map((d) => (
-        <Card key={d.id} style={{ borderLeftWidth: 4, borderLeftColor: p.colourOf(codeOf(d.course_id)), gap: 2 }}>
-          <T variant="small" style={{ fontWeight: '700', color: p.colourOf(codeOf(d.course_id)) }}>{codeOf(d.course_id)} · {KIND_LABEL[d.kind]} {d.done ? '✓' : ''}</T>
-          <T style={{ fontWeight: '600' }}>{d.label || KIND_LABEL[d.kind]} at {fmtTime(d.due_at)}</T>
-          {d.covers ? <T variant="small" muted>{d.covers}</T> : null}
-        </Card>
-      ))}
+      </Card>
+      <Row style={{ justifyContent: 'space-between' }}>
+        <T variant="title">{sel === todayKey ? 'Today' : new Date(sel + 'T12:00:00').toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' })}</T>
+        {selSessions.length > 0 && <T variant="small" muted>{Math.round(selSessions.reduce((a, s) => a + s.minutes, 0) / 6) / 10} h planned</T>}
+      </Row>
+      {selDue.map((d) => {
+        const col = p.colourOf(codeOf(d.course_id));
+        return (
+          <Card key={d.id} tint={col} style={{ gap: 6 }}>
+            <Row><CourseTag code={codeOf(d.course_id)} color={col} /><T variant="label" color={col}>{KIND_LABEL[d.kind]} due {fmtTime(d.due_at)}{d.done ? ' · done' : ''}</T></Row>
+            <T variant="heading">{d.label || KIND_LABEL[d.kind]}</T>
+            {d.covers ? <T variant="small" muted>{d.covers}</T> : null}
+          </Card>
+        );
+      })}
       {selSessions.map((s) => <PlanSession key={s.id} s={s as FullSession} done={!!p.plan?.done[s.id]} colour={p.colourOf(s.course)} onToggle={() => p.toggleDone(s.id)} courses={p.courses} deadlines={p.deadlines} />)}
-      {!selSessions.length && !selDue.length && <T muted>{daysUntil(sel) < 0 ? 'Nothing was planned.' : 'Nothing planned. A rest day.'}</T>}
-      <Card style={{ gap: space.sm }}>
-        <T style={{ fontWeight: '600' }}>Phone calendar</T>
+      {!selSessions.length && !selDue.length && <Card flat><T muted>{daysUntil(sel) < 0 ? 'Nothing was planned.' : 'Nothing planned. A rest day.'}</T></Card>}
+      <Card style={{ gap: space.md }}>
+        <T variant="heading">Phone calendar</T>
         <T variant="small" muted>Put your plan and deadlines in a "StudyBuddy" calendar on your phone, next to your classes. Your other events are read so the planner leaves room for them.</T>
-        <LinkText title="Sync with my calendar" onPress={sync} />
+        <Button title="Sync with my calendar" kind="soft" icon={ic('arrow.triangle.2.circlepath', 'sync')} onPress={sync} />
       </Card>
     </Screen>
   );

@@ -1,13 +1,13 @@
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Pressable, View } from 'react-native';
-import { Button, Card, Empty, Row, Screen, T } from '@/components/ui';
+import { Text, View } from 'react-native';
+import { Button, Empty, Icon, ic, Pressy, Row, Screen, T } from '@/components/ui';
 import { useAccount } from '@/lib/auth';
-import { courseColour, daysUntil, relDays, type Course } from '@/lib/data';
+import { courseColour, daysUntil, KIND_LABEL, type Course, type DeadlineKind } from '@/lib/data';
 import { supabase } from '@/lib/supabase';
-import { space, useTheme } from '@/lib/theme';
+import { font, radius, space, useTheme } from '@/lib/theme';
 
-type C = Course & { deadlines: { kind: string; label: string | null; due_at: string; done: boolean }[]; materials: { id: string }[] };
+type C = Course & { deadlines: { kind: DeadlineKind; label: string | null; due_at: string; done: boolean }[]; materials: { id: string }[] };
 
 export default function Courses() {
   const t = useTheme();
@@ -20,35 +20,59 @@ export default function Courses() {
   }, []));
 
   const atLimit = (courses?.length ?? 0) >= limits.courses;
+  const add = () => router.push(atLimit && plan === 'free' ? '/paywall' : '/course/new');
 
   return (
     <Screen>
-      <T variant="title">Courses</T>
+      <Row style={{ justifyContent: 'space-between', flexWrap: 'nowrap' }}>
+        <T variant="display">Courses</T>
+        {courses && courses.length > 0 && <Button title="Add" small icon={ic('plus', 'add')} onPress={add} />}
+      </Row>
       {courses?.length === 0 && (
-        <Empty title="No courses yet" body="Add a course from its syllabus: StudyBuddy pulls out the deadlines and exams and builds your plan."
-          action={<Button title="Add a course" onPress={() => router.push('/course/new')} />} />
+        <Empty title="No courses yet" body="Add a course from its syllabus. StudyBuddy finds the deadlines and exams and builds your plan."
+          action={<Button title="Add a course" icon={ic('plus', 'add')} onPress={add} />} />
       )}
-      {courses?.map((c, i) => {
-        const next = c.deadlines.filter((d) => !d.done && daysUntil(d.due_at) >= 0).sort((a, b) => a.due_at.localeCompare(b.due_at))[0];
-        return (
-          <Pressable key={c.id} onPress={() => router.push({ pathname: '/course/[id]', params: { id: c.id } })}>
-            <Card style={{ flexDirection: 'row', gap: space.md }}>
-              <View style={{ width: 6, borderRadius: 3, backgroundColor: courseColour(c, i) }} />
-              <View style={{ flex: 1, gap: 2 }}>
-                <T style={{ fontWeight: '600' }}>{c.code}</T>
-                {c.name ? <T variant="small" muted>{c.name}</T> : null}
-                <Row style={{ marginTop: 4 }}>
-                  <T variant="small" muted>{c.materials.length} file{c.materials.length === 1 ? '' : 's'}</T>
-                  {next ? <T variant="small" style={{ color: daysUntil(next.due_at) <= 3 ? t.danger : t.muted }}>· Next: {next.label || next.kind} {relDays(daysUntil(next.due_at))}</T> : null}
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.md }}>
+        {courses?.map((c, i) => {
+          const col = courseColour(c, i);
+          const next = c.deadlines.filter((d) => !d.done && daysUntil(d.due_at) >= 0).sort((a, b) => a.due_at.localeCompare(b.due_at))[0];
+          const n = next ? daysUntil(next.due_at) : null;
+          return (
+            <Pressy key={c.id} onPress={() => router.push({ pathname: '/course/[id]', params: { id: c.id } })}
+              style={{ flexGrow: 1, flexBasis: 160, minHeight: 190, backgroundColor: col, borderRadius: radius.xl, padding: space.lg, justifyContent: 'space-between', overflow: 'hidden' }}>
+              {/* notebook spine */}
+              <View style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 10, backgroundColor: 'rgba(0,0,0,0.12)' }} />
+              <View style={{ position: 'absolute', right: -30, bottom: -30, width: 120, height: 120, borderRadius: 60, backgroundColor: 'rgba(255,255,255,0.12)' }} />
+              <View style={{ gap: 4, paddingLeft: 4 }}>
+                <Text style={{ color: '#fff', fontFamily: font.display, fontSize: 26, lineHeight: 28, letterSpacing: -0.6 }}>{c.code}</Text>
+                {c.name ? <Text numberOfLines={2} style={{ color: 'rgba(255,255,255,0.88)', fontFamily: font.medium, fontSize: 14, lineHeight: 19 }}>{c.name}</Text> : null}
+              </View>
+              <View style={{ gap: 8, paddingLeft: 4 }}>
+                {next ? (
+                  <View style={{ alignSelf: 'flex-start', backgroundColor: n! <= 3 ? '#FFFFFF' : 'rgba(255,255,255,0.22)', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 }}>
+                    <Text style={{ color: n! <= 3 ? col : '#fff', fontFamily: font.bold, fontSize: 12.5 }}>
+                      {next.label || KIND_LABEL[next.kind]} · {n === 0 ? 'today' : n === 1 ? 'tomorrow' : `${n} days`}
+                    </Text>
+                  </View>
+                ) : null}
+                <Row style={{ gap: 12 }}>
+                  <Row style={{ gap: 4 }}><Icon name={ic('doc.fill', 'description')} size={15} color="rgba(255,255,255,0.85)" /><Text style={{ color: 'rgba(255,255,255,0.85)', fontFamily: font.semi, fontSize: 13 }}>{c.materials.length}</Text></Row>
+                  <Row style={{ gap: 4 }}><Icon name={ic('flag.fill', 'flag')} size={15} color="rgba(255,255,255,0.85)" /><Text style={{ color: 'rgba(255,255,255,0.85)', fontFamily: font.semi, fontSize: 13 }}>{c.deadlines.filter((d) => !d.done).length}</Text></Row>
                 </Row>
               </View>
-            </Card>
-          </Pressable>
-        );
-      })}
-      {courses && courses.length > 0 && (atLimit && plan === 'free'
-        ? <Button title="Upgrade to add more courses" kind="secondary" onPress={() => router.push('/paywall')} />
-        : <Button title="Add a course" kind="secondary" onPress={() => router.push('/course/new')} />)}
+            </Pressy>
+          );
+        })}
+        {courses && courses.length > 0 && (
+          <Pressy onPress={add} style={{ flexGrow: 1, flexBasis: 160, minHeight: 190, borderRadius: radius.xl, borderWidth: 2, borderStyle: 'dashed', borderColor: t.border, alignItems: 'center', justifyContent: 'center', gap: 8, padding: space.lg }}>
+            <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: t.accentSoft, alignItems: 'center', justifyContent: 'center' }}>
+              <Icon name={ic('plus', 'add')} size={26} color={t.accent} />
+            </View>
+            <T variant="strong" color={t.accent}>{atLimit && plan === 'free' ? 'Upgrade for more' : 'Add a course'}</T>
+            <T variant="small" muted style={{ textAlign: 'center' }}>From its syllabus</T>
+          </Pressy>
+        )}
+      </View>
     </Screen>
   );
 }

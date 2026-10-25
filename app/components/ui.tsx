@@ -29,11 +29,18 @@ export function Icon({ name, size = 20, color }: { name: IconName; size?: number
 export function Pressy({ children, style, scaleTo = 0.97, onPress, haptics = true, ...rest }: PressableProps & { style?: StyleProp<ViewStyle>; scaleTo?: number; haptics?: boolean; children: ReactNode }) {
   const s = useSharedValue(1);
   const a = useAnimatedStyle(() => ({ transform: [{ scale: s.value }] }));
+  // Sizing in the parent's layout belongs on the outer touch area; the look goes on the animated inner view.
+  const flat = (StyleSheet.flatten(style) ?? {}) as ViewStyle;
+  const outer: ViewStyle = {}, inner: ViewStyle = { ...flat };
+  for (const k of ['flex', 'flexGrow', 'flexShrink', 'flexBasis', 'width', 'maxWidth', 'minWidth', 'alignSelf', 'margin', 'marginTop', 'marginBottom', 'marginLeft', 'marginRight', 'marginHorizontal', 'marginVertical'] as const) {
+    if (flat[k] !== undefined) { (outer as Record<string, unknown>)[k] = flat[k]; delete (inner as Record<string, unknown>)[k]; }
+  }
+  if (outer.flex || outer.flexGrow || outer.width) inner.flexGrow = 1;
   return (
-    <Pressable {...rest} onPress={(e) => { if (haptics) haptic.tap(); onPress?.(e); }}
+    <Pressable {...rest} style={outer} onPress={(e) => { if (haptics) haptic.tap(); onPress?.(e); }}
       onPressIn={(e) => { s.value = withSpring(scaleTo, { damping: 18, stiffness: 420 }); rest.onPressIn?.(e); }}
       onPressOut={(e) => { s.value = withSpring(1, { damping: 14, stiffness: 300 }); rest.onPressOut?.(e); }}>
-      <Animated.View style={[style, a]}>{children}</Animated.View>
+      <Animated.View style={[inner, a]}>{children}</Animated.View>
     </Pressable>
   );
 }
