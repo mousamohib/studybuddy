@@ -9,6 +9,7 @@ import { downloadMarkdown } from '@/lib/export';
 import { USAGE_LABELS, type UsageField } from '@/lib/limits';
 import { askCalendarPermission, askNotificationPermission, refreshPhoneSchedule } from '@/lib/reminders';
 import { STYLE_LOOK, STYLE_OPTIONS } from '@/lib/styles';
+import { startTour } from '@/lib/tour';
 import { supabase } from '@/lib/supabase';
 import { font, radius, space, tint, useTheme } from '@/lib/theme';
 
@@ -171,6 +172,7 @@ export default function Profile() {
 
       <Card style={{ gap: space.md }}>
         <Row><LinkText title="Privacy Policy" onPress={() => router.push({ pathname: '/legal', params: { doc: 'privacy' } })} /><LinkText title="Terms of Use" onPress={() => router.push({ pathname: '/legal', params: { doc: 'terms' } })} /></Row>
+        <Button title="Show me around again" kind="soft" icon={ic('map.fill', 'explore')} onPress={startTour} />
         <Button title="Export my data" kind="soft" icon={ic('square.and.arrow.down', 'download')} onPress={exportData} />
         <Button title="Sign out" kind="soft" icon={ic('rectangle.portrait.and.arrow.right', 'logout')} onPress={() => supabase.auth.signOut()} />
         <Button title="Delete account" kind="ghost" color={t.danger} onPress={deleteAccount} loading={deleting} />

@@ -7,6 +7,7 @@ import { SchoolPicker } from '@/components/SchoolPicker';
 import { useAccount } from '@/lib/auth';
 import { askNotificationPermission } from '@/lib/reminders';
 import { STYLE_LOOK, STYLE_OPTIONS } from '@/lib/styles';
+import { endTour } from '@/lib/tour';
 import { supabase } from '@/lib/supabase';
 import { font, radius, space, tint, useTheme } from '@/lib/theme';
 
@@ -31,6 +32,7 @@ export default function Onboarding() {
       study_hours: { Mon: weekday, Tue: weekday, Wed: weekday, Thu: weekday, Fri: weekday, Sat: weekend, Sun: weekend },
       notify: { daily: notify, deadlines: notify, exams: notify },
     }).eq('id', session!.user.id);
+    if (addCourse) await endTour(session!.user.id); // they chose to skip the walkthrough
     await refresh();
     setBusy(false);
     if (addCourse) setTimeout(() => router.push('/course/new'), 50);
@@ -105,10 +107,10 @@ export default function Onboarding() {
               <Icon name={ic('bell.fill', 'notifications')} size={22} color={t.dark ? t.highlight : '#8A6D00'} />
               <T variant="small" style={{ flex: 1 }}>Next, Scrawlie asks to send reminders: today's plan, deadlines and exam countdowns. Turn each off any time in your profile.</T>
             </Card>
-            <Button title="Add my first course" icon={ic('plus', 'add')} onPress={() => finish(true)} loading={busy} />
+            <Button title="Show me around" icon={ic('arrow.right', 'arrow_forward')} onPress={() => finish(false)} loading={busy} />
             <Row style={{ flexWrap: 'nowrap' }}>
               <Button title="Back" kind="ghost" onPress={() => setStep(1)} />
-              <Button title="Skip for now" kind="ghost" onPress={() => finish(false)} style={{ flex: 1 }} />
+              <Button title="Skip tour, add a course" kind="ghost" onPress={() => finish(true)} style={{ flex: 1 }} />
             </Row>
           </>
         )}

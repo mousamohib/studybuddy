@@ -30,6 +30,7 @@ export default function Courses() {
         <T variant="display">Courses</T>
         {courses && courses.length > 0 && <Button title="Add" small icon={ic('plus', 'add')} onPress={add} />}
       </Row>
+      {courses && courses.length > 0 && <T variant="small" muted>Open a course for its files, deadlines, exam prep, tutor and memory.</T>}
       {courses?.length === 0 && (
         <Empty title="No courses yet" body="Add a course from its syllabus. Scrawlie finds the deadlines and exams and builds your plan."
           action={<Button title="Add a course" icon={ic('plus', 'add')} onPress={add} />} />

@@ -1,7 +1,7 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { View } from 'react-native';
-import { Button, Field, Icon, ic, ListRow, Pressy, Row, Segments, T, useAccent } from '@/components/ui';
+import { Button, Field, Icon, ic, ListRow, Pressy, Row, T, useAccent } from '@/components/ui';
 import { useNotice } from '@/components/Menu';
 import { isAssignment, MODE_LABEL, type ChatMode } from '@/lib/data';
 import { openNewChat } from '@/lib/chats';
@@ -9,6 +9,13 @@ import { ink, radius, space, tint, useTheme } from '@/lib/theme';
 import type { CourseData } from './useCourse';
 
 const MODES: ChatMode[] = ['ask', 'lesson', 'practice', 'coding', 'assignment'];
+const MODE_INFO: Record<ChatMode, { blurb: string; icon: ReturnType<typeof ic> }> = {
+  ask: { blurb: 'Quick answer to a question', icon: ic('questionmark.bubble.fill', 'help') },
+  lesson: { blurb: 'Learn a topic step by step', icon: ic('graduationcap.fill', 'school') },
+  practice: { blurb: 'Questions, then it marks you', icon: ic('checkmark.circle.fill', 'task_alt') },
+  coding: { blurb: 'Coding exercises with feedback', icon: ic('chevron.left.forwardslash.chevron.right', 'code') },
+  assignment: { blurb: 'Help with one assignment', icon: ic('doc.text.fill', 'assignment') },
+};
 const PLACEHOLDER: Record<ChatMode, string> = {
   ask: 'Your question', lesson: 'Topic to learn (blank = Claude picks)', practice: 'Topic to practise (optional)',
   coding: 'What to practise coding (optional)', assignment: 'What you need help with (optional)',
@@ -35,8 +42,23 @@ export function Chats({ data }: { data: CourseData }) {
   return (
     <View style={{ gap: space.xl }}>
       <View style={{ gap: space.md }}>
-        <T variant="heading">New chat</T>
-        <Segments items={MODES.map((m) => ({ key: m, label: MODE_LABEL[m] }))} value={mode} onChange={setMode} />
+        <T variant="heading">Start a new chat</T>
+        <T variant="small" muted>Pick what kind of help you want. The tutor uses this course's files and remembers what you tell it.</T>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+          {MODES.map((m) => {
+            const on = mode === m;
+            return (
+              <Pressy key={m} onPress={() => setMode(m)} accessibilityRole="radio" accessibilityState={{ selected: on }}
+                style={{ flexGrow: 1, flexBasis: 150, flexDirection: 'row', alignItems: 'center', gap: 10, padding: 12, borderRadius: radius.md, borderWidth: 2, borderColor: on ? accent : 'transparent', backgroundColor: on ? tint(accent, t.dark ? 0.24 : 0.12) : t.surface }}>
+                <Icon name={MODE_INFO[m].icon} size={20} color={on ? ink(accent, t) : t.muted} />
+                <View style={{ flex: 1 }}>
+                  <T variant="strong" color={on ? ink(accent, t) : t.text}>{MODE_LABEL[m]}</T>
+                  <T variant="small" muted>{MODE_INFO[m].blurb}</T>
+                </View>
+              </Pressy>
+            );
+          })}
+        </View>
         {mode === 'assignment' && (asg.length ? (
           <Row>{asg.map((d) => {
             const on = (asgId ?? asg[0].id) === d.id;
@@ -51,6 +73,7 @@ export function Chats({ data }: { data: CourseData }) {
         <Button title="Start chat" icon={ic('arrow.right', 'arrow_forward')} onPress={start} />
       </View>
       <View>
+        {data.chats.length > 0 && <T variant="heading" style={{ marginBottom: space.sm }}>Your chats</T>}
         {data.chats.map((ch, i) => (
           <ListRow key={ch.id} last={i === data.chats.length - 1} onPress={() => router.push({ pathname: '/chat/[id]', params: { id: ch.id } })}>
             <View style={{ width: 4, alignSelf: 'stretch', borderRadius: 2, backgroundColor: accent }} />

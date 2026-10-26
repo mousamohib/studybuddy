@@ -10,6 +10,7 @@ import { openNewChat } from '@/lib/chats';
 import { useAccount } from '@/lib/auth';
 import { daysUntil, fmtDay, fmtTime, KIND_LABEL, localISO } from '@/lib/data';
 import { usePlan } from '@/lib/usePlan';
+import { startTour } from '@/lib/tour';
 import { font, ink, radius, space, tint, useTheme } from '@/lib/theme';
 
 const CHIPS = ['Make today lighter', 'Take tomorrow off', "I'm behind, catch me up", 'Focus on my next exam'];
@@ -121,8 +122,7 @@ export default function Today() {
     return (
       <Screen>
         {header}
-        <Empty title="Set up your semester" body="Add your first course from its syllabus. Scrawlie finds the deadlines and exams and builds your study plan."
-          action={<Button title="Add a course" icon={ic('plus', 'add')} onPress={() => router.push('/course/new')} />} />
+        <GetStarted />
       </Screen>
     );
   }
@@ -290,6 +290,39 @@ export default function Today() {
         )}
       </Screen>
       <Confetti burst={burst.n} big={burst.big} />
+    </View>
+  );
+}
+
+// New accounts: three clear steps instead of an empty screen, plus a way back into the tour.
+function GetStarted() {
+  const t = useTheme();
+  const slab = useSlab();
+  const steps = [
+    { n: 1, title: 'Add a course', body: 'Upload its syllabus or course outline. Scrawlie finds every deadline and exam.', col: '#FFD43B' },
+    { n: 2, title: 'Upload lecture slides', body: 'This unlocks the tutor, cheat sheets and practice papers for that course.', col: '#FF8FB4' },
+    { n: 3, title: 'Follow your plan', body: 'Each day you get a short list of study sessions. Tick them off as you go.', col: '#7BE3B8' },
+  ];
+  return (
+    <View style={{ gap: space.lg }}>
+      <View style={{ gap: 4 }}>
+        <T variant="title">Set up your semester</T>
+        <T muted>Three steps and you're ready.</T>
+      </View>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.md }}>
+        {steps.map((s, i) => (
+          <View key={s.n} style={[{ flexGrow: 1, flexBasis: 220, backgroundColor: Platform.OS === 'web' ? s.col : t.surface, padding: space.lg, gap: 6, borderRadius: radius.lg, opacity: i === 0 ? 1 : 0.85, overflow: 'visible' }, Platform.OS === 'web' ? slab : null]}>
+            {Platform.OS === 'web' && <Tape />}
+            <Text style={{ fontFamily: font.hand, fontSize: 40, lineHeight: 42, color: Platform.OS === 'web' ? '#1B1E3F' : t.accent }}>{s.n}</Text>
+            <Text style={{ fontFamily: font.heading, fontSize: 19, color: Platform.OS === 'web' ? '#1B1E3F' : t.text }}>{s.title}</Text>
+            <Text style={{ fontFamily: font.body, fontSize: 15, lineHeight: 21, color: Platform.OS === 'web' ? 'rgba(27,30,63,0.78)' : t.muted }}>{s.body}</Text>
+          </View>
+        ))}
+      </View>
+      <Row>
+        <Button title="Add my first course" kind="highlight" icon={ic('plus', 'add')} onPress={() => router.push('/course/new')} />
+        <Button title="Show me around" kind="soft" icon={ic('map.fill', 'explore')} onPress={startTour} />
+      </Row>
     </View>
   );
 }

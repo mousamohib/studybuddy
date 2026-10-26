@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Platform, Pressable, StyleSheet, View } from 'react-native';
 import { Button, Card, Field, Icon, ic, LinkText, Pill, Pressy, Row, Segments, T, useAccent } from '@/components/ui';
 import { useMenu, useNotice } from '@/components/Menu';
@@ -25,7 +25,7 @@ const FILE_LOOK = (name: string) => {
 
 const STATUS: Record<Material['status'], string> = { uploaded: 'Uploading…', reading: 'Reading…', outlining: 'Outlining…', ready: 'Ready', error: "Couldn't read" };
 
-export function Materials({ data }: { data: CourseData }) {
+export function Materials({ data, addNonce = 0 }: { data: CourseData; addNonce?: number }) {
   const t = useTheme();
   const accent = useAccent().color;
   const { refresh } = useAccount();
@@ -68,6 +68,9 @@ export function Materials({ data }: { data: CourseData }) {
     ]);
   }
 
+  // "Upload files" on the course card opens the add menu straight away.
+  useEffect(() => { if (addNonce > 0) addMenu(); }, [addNonce]); // eslint-disable-line react-hooks/exhaustive-deps
+
   async function remove(m: Material) {
     if (await confirm(`Delete ${m.file_name}?`, 'The file and its outline are removed.', 'Delete')) { await deleteMaterial(m.id, m.storage_path); data.reload(); }
   }
@@ -81,7 +84,7 @@ export function Materials({ data }: { data: CourseData }) {
   }
 
   const items = [{ key: 'study', label: `Study material (${data.materials.filter((m) => !m.deadline_id).length})` },
-    ...assignments.map((d) => ({ key: d.id, label: `${d.label || KIND_LABEL[d.kind]} · ${fmtDay(d.due_at)}` })), { key: 'new', label: '+ Assignment' }];
+    ...assignments.map((d) => ({ key: d.id, label: `${d.label || KIND_LABEL[d.kind]} · ${fmtDay(d.due_at)}` })), { key: 'new', label: '+ New assignment' }];
 
   return (
     <View ref={dropRef} style={{ gap: space.md }}>
