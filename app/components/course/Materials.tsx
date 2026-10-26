@@ -15,6 +15,7 @@ import type { CourseData } from './useCourse';
 
 const FILE_LOOK = (name: string) => {
   const ext = name.split('.').pop()?.toLowerCase() ?? '';
+  if (['vtt', 'srt', 'mp3', 'm4a', 'wav', 'ogg', 'flac', 'aac', 'mp4', 'm4v', 'mov', 'webm', 'mpeg'].includes(ext)) return { c: '#E5385F', i: ic('mic.fill', 'mic'), l: 'Lecture' };
   if (ext === 'pdf') return { c: '#E5385F', i: ic('doc.richtext.fill', 'picture_as_pdf'), l: 'PDF' };
   if (['ppt', 'pptx', 'key'].includes(ext)) return { c: '#F07A12', i: ic('rectangle.on.rectangle.angled.fill', 'slideshow'), l: 'Slides' };
   if (['doc', 'docx', 'txt', 'md', 'rtf'].includes(ext)) return { c: '#3442F5', i: ic('doc.text.fill', 'article'), l: 'Doc' };
@@ -64,6 +65,7 @@ export function Materials({ data, addNonce = 0 }: { data: CourseData; addNonce?:
       { label: 'Files (PDF, PowerPoint, Word, zip, code)', onPress: () => upload(pickDocuments) },
       { label: 'Photos of notes or slides', onPress: () => upload(() => pickPhoto(false)) },
       { label: 'Take a photo', onPress: () => upload(() => pickPhoto(true)) },
+      ...(current ? [] : [{ label: 'Lecture recording or captions (.vtt, .srt, .txt, audio)', onPress: () => upload(pickDocuments) }]),
       { label: 'Cancel' },
     ]);
   }
@@ -122,7 +124,7 @@ export function Materials({ data, addNonce = 0 }: { data: CourseData; addNonce?:
                     <T variant="strong" numberOfLines={1}>{m.outline?.title && m.status === 'ready' ? m.outline.title : m.file_name}</T>
                     <Row style={{ gap: 6 }}>
                       {m.status === 'ready'
-                        ? <><Pill label={m.outline?.kind === 'practice' ? 'Practice' : m.outline?.kind === 'assignment' ? 'Assignment' : look.l} color={look.c} /><T variant="small" muted>{(m.outline?.topics ?? []).length} topics</T></>
+                        ? <><Pill label={m.outline?.kind === 'recording' ? 'Lecture recording' : m.outline?.kind === 'practice' ? 'Practice' : m.outline?.kind === 'assignment' ? 'Assignment' : look.l} color={m.outline?.kind === 'recording' ? '#E5385F' : look.c} /><T variant="small" muted>{(m.outline?.topics ?? []).length} topics</T></>
                         : <Pill label={STATUS[m.status]} color={m.status === 'error' ? t.danger : accent} />}
                     </Row>
                   </View>
@@ -137,10 +139,20 @@ export function Materials({ data, addNonce = 0 }: { data: CourseData; addNonce?:
                         <T variant="small" style={{ flex: 1 }}>{tp.name}{tp.where ? <T variant="small" muted>{`  ${tp.where}`}</T> : null}</T>
                       </Row>
                     ))}
+                    {m.outline?.exam_hints?.length ? (
+                      <View style={{ gap: 4, marginTop: 6, padding: 10, borderRadius: 8, backgroundColor: tint('#FFD43B', t.dark ? 0.14 : 0.25) }}>
+                        <T variant="label">Said about the exam</T>
+                        {m.outline.exam_hints.map((h, i) => <T key={i} variant="small">• {h}</T>)}
+                      </View>
+                    ) : null}
                     {m.outline?.skipped?.length ? <T variant="small" muted>Skipped inside the file: {m.outline.skipped.slice(0, 8).join(', ')}</T> : null}
                   </View>
                 )}
-                {m.status === 'error' && <T variant="small" muted>{m.outline?.error === 'no readable text' ? 'No readable text (maybe a scanned PDF). Try uploading photos of the pages instead.' : 'Something went wrong reading this file. Delete it and try again.'}</T>}
+                {m.status === 'error' && <T variant="small" muted>{
+                  m.outline?.error === 'no readable text' ? 'No readable text (maybe a scanned PDF). Try uploading photos of the pages instead.'
+                  : m.outline?.error === 'needs captions' ? "Recordings can't be turned into text yet. Download this lecture's captions or transcript (.vtt, .srt or .txt from Panopto, Zoom, YouTube, Teams or Echo360) and upload that instead."
+                  : m.outline?.error === 'recording too large' ? 'This recording is over 25 MB. Upload just the audio, or its captions/transcript file instead.'
+                  : 'Something went wrong reading this file. Delete it and try again.'}</T>}
                 {(isOpen || m.status === 'error') && <LinkText title="Delete file" color={t.danger} onPress={() => remove(m)} />}
               </View>
             );
@@ -149,6 +161,7 @@ export function Materials({ data, addNonce = 0 }: { data: CourseData; addNonce?:
           <View style={{ gap: 6 }}>
             <Button title={current ? 'Add handout, code or group progress' : files.length ? 'Add more files' : 'Add your first file'} icon={ic('arrow.up.doc.fill', 'upload_file')} onPress={addMenu} />
             <T variant="small" muted style={{ textAlign: 'center' }}>PDF, PowerPoint, Word, zip, code or photos of notes{Platform.OS === 'web' ? '. Or drag files anywhere here.' : ''}</T>
+            {!current && <T variant="small" muted style={{ textAlign: 'center' }}>Lecture recordings and their captions work too. The tutor and exam prep use what your lecturer said, and the tutor can explain things the way they did.</T>}
           </View>
           {current && <AssignmentInfo d={current} />}
         </>

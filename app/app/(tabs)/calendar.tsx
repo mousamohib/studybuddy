@@ -1,3 +1,4 @@
+import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { Pressable, View, useWindowDimensions } from 'react-native';
 import { Button, Card, CourseTag, IconButton, ic, Row, Screen, T } from '@/components/ui';
@@ -97,6 +98,11 @@ export default function CalendarTab() {
       })}
       {selSessions.map((s) => <PlanSession key={s.id} s={s as FullSession} done={!!p.plan?.done[s.id]} colour={p.colourOf(s.course)} onToggle={() => p.toggleDone(s.id)} courses={p.courses} deadlines={p.deadlines} />)}
       {!selSessions.length && !selDue.length && <Card flat><T muted>{daysUntil(sel) < 0 ? 'Nothing was planned.' : 'Nothing planned. A rest day.'}</T></Card>}
+      <Card style={{ gap: space.md }}>
+        <T variant="heading">School calendar</T>
+        <T variant="small" muted>Connect Brightspace (myCourses), Canvas, Moodle or Blackboard once. Deadlines your profs post appear here by themselves, and moved dates update your plan.</T>
+        <Button title="Connect school calendar" icon={ic('link', 'link')} onPress={() => router.push('/connect-calendar')} />
+      </Card>
       <Card style={{ gap: space.md }}>
         <T variant="heading">Phone calendar</T>
         <T variant="small" muted>Put your plan and deadlines in a "Scrawlie" calendar on your phone, next to your classes. Your other events are read so the planner leaves room for them.</T>

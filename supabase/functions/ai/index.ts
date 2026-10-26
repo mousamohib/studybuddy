@@ -15,6 +15,7 @@ const MODIFIER_TEXT: Record<string, string> = {
   maths: "be more mathematical: precise notation and every derivation step",
   intuition: "focus on intuition and theory: why things work",
   example: "build explanations around fully worked examples",
+  like_lecture: "explain things the way the lecturer did in the lecture recordings: follow their order, running examples, analogies, notation and phrasing (see the transcripts and the lecturer's style notes), quote short phrases they used, and point out what they said matters for the exam. If the recordings don't cover a point, say so briefly, then explain it in the same spirit",
 };
 
 Deno.serve(async (req) => {
@@ -67,7 +68,27 @@ ${pb.is_group ? "Focus help on the student's own part. Use teammates' parts only
   }
   const todayKey = new Date().toISOString().slice(0, 10);
   const todays = ((plan?.days ?? []) as { date: string; sessions: { id: string; course: string; title: string; minutes: number }[] }[]).find((d) => d.date === todayKey)?.sessions ?? [];
-  const mats = await materialsText(admin, user.id, chat.material_ids ?? [], chat.mode === "assignment" ? 110_000 : 140_000);
+  // Lecture recordings: in "like my lecture" mode, the most relevant transcripts get most of the room,
+  // plus notes on how this lecturer explains things.
+  const likeLecture = chat.modifier === "like_lecture" || (body.mode === "reshape" && body.style === "like_lecture");
+  const budget = chat.mode === "assignment" ? 110_000 : 140_000;
+  let mats = "", lectureStyle = "";
+  if (likeLecture && c) {
+    const { data: recs } = await admin.from("materials").select("id, file_name, outline").eq("user_id", user.id).eq("course_id", c.id).eq("status", "ready").filter("outline->>kind", "eq", "recording");
+    const words = new Set(`${chat.title} ${body.text ?? ""} ${(Array.isArray(chat.messages) ? String(chat.messages.at(-1)?.content ?? "") : "").slice(0, 400)}`.toLowerCase().match(/[a-z]{4,}/g) ?? []);
+    const score = (o: Outline | null) => [o?.title ?? "", ...(o?.topics ?? []).map((t) => t.name)].join(" ").toLowerCase().match(/[a-z]{4,}/g)?.filter((w) => words.has(w)).length ?? 0;
+    const ranked = ((recs ?? []) as { id: string; file_name: string; outline: Outline | null }[]).sort((a, b) => score(b.outline) - score(a.outline)).slice(0, 2);
+    const recIds = new Set((recs ?? []).map((r: { id: string }) => r.id));
+    const recText = ranked.length ? await materialsText(admin, user.id, ranked.map((r) => r.id), 75_000) : "";
+    const rest = await materialsText(admin, user.id, (chat.material_ids ?? []).filter((id: string) => !recIds.has(id)), budget - recText.length);
+    mats = [recText && `# Lecture recording transcripts ([t. mm:ss] = time in the recording)\n${recText}`, rest].filter(Boolean).join("\n\n");
+    const notes = ((recs ?? []) as { outline: Outline | null }[]).flatMap((r) => (r.outline as { style?: string[] } | null)?.style ?? []).slice(0, 16);
+    lectureStyle = recs?.length
+      ? `\n# How this lecturer explains things (from their recordings)\n${notes.map((n) => `- ${n}`).join("\n") || "(use the transcripts)"}`
+      : "\n# Lecture recordings\nNo lecture recordings or transcripts have been uploaded for this course yet. Say so in one line and suggest uploading the captions (.vtt/.srt) or recording, then explain as well as you can.";
+  } else {
+    mats = await materialsText(admin, user.id, chat.material_ids ?? [], budget);
+  }
   const facts = (memory ?? []).filter((m: { kind: string }) => m.kind === "fact").map((m: { text: string }) => `- ${m.text}`).join("\n");
 
   const system = `You are Scrawlie, a study tutor inside a student app${c ? `, in the student's ${c.code} workspace` : ""}. Today is ${todayKey}.
@@ -84,7 +105,7 @@ ${todays.map((s) => `- ${s.course}: ${s.title} (${s.minutes} min)`).join("\n") |
 ${dl ? `\n# This chat is about: ${codeOf(dl.course_id)} ${dl.kind}${dl.label ? ` ${dl.label}` : ""}, due ${dl.due_at.slice(0, 10)}${dl.covers ? `. ${dl.covers}` : ""}` : ""}
 ${chat.mode === "lesson" ? "\n# Mode: teach a topic in full, following the teaching rules." : chat.mode === "practice" ? "\n# Mode: practice. Give questions first; hold worked solutions until the student answers or asks." : chat.mode === "coding" ? "\n# Mode: coding practice. Short recap, one worked example, then exercises of increasing difficulty with hints; full solutions only on request." : chat.mode === "assignment" ? "\n# Mode: assignment help." : ""}
 ${scope}
-${project}
+${project}${lectureStyle}
 ${mats ? `\n# Course materials for this chat ([p. N] / [slide N] markers are page numbers: use them only to name the source once)\n${mats}` : ""}
 
 # Remembering things

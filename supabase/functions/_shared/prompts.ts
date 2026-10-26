@@ -32,6 +32,7 @@ export const RESHAPE: Record<string, string> = {
   maths: "Rewrite your previous answer more mathematically: precise definitions, notation, and every derivation step shown with reasons.",
   intuition: "Rewrite your previous answer with more intuition and theory: why it works, the big-picture idea, and how it connects to other topics.",
   example: "Rewrite your previous answer around concrete worked examples: show at least one fully worked example step by step.",
+  like_lecture: "Rewrite your previous answer the way my lecturer explained it in the lecture recordings: use their order, running examples, analogies, notation and phrasing from the transcripts, and point out anything they said matters for the exam. If the recordings don't cover a point, say so briefly and explain it in the same spirit.",
   quiz: "Turn your previous answer into a short quiz: 3-5 questions that test the key points. Give the questions only; hold the answers until I reply.",
 };
 
@@ -58,7 +59,7 @@ export function deadlinesText(ds: Deadline[], codeOf: (id: string) => string): s
   return up.length ? up.map((d) => `- [${d.id}] ${codeOf(d.course_id)} ${d.kind}${d.label ? ` (${d.label})` : ""} due ${fmtDate(d.due_at)} (in ${daysUntil(d.due_at)} days)${d.covers ? `. Covers: ${d.covers}` : ""}`).join("\n") : "(none)";
 }
 
-export type Outline = { kind?: string; title?: string; topics?: { name: string; where?: string; summary?: string }[] };
+export type Outline = { kind?: string; title?: string; topics?: { name: string; where?: string; summary?: string }[]; exam_hints?: string[]; style?: string[] };
 export const outlineText = (o: Outline | null) => (o?.topics ?? []).map((t) => `  - ${t.name}${t.where ? ` [${t.where}]` : ""}`).join("\n");
 
 /** Loads the full text of materials and shrinks them evenly to fit a character budget. */
@@ -75,4 +76,10 @@ export async function materialsText(admin: SupabaseClient, uid: string, ids: str
     const n = Math.floor(t.length * k);
     return `## ${m.file_name}\n${t.slice(0, n)}${n < t.length ? "\n[…shortened to fit]" : ""}`;
   }).join("\n\n");
+}
+
+/** What lecturers said about the exam in their recordings, for exam prep prompts. */
+export async function lectureHints(admin: SupabaseClient, uid: string, courseId: string): Promise<string> {
+  const { data } = await admin.from("memory").select("text").eq("user_id", uid).eq("course_id", courseId).eq("source", "lecture").eq("done", false).limit(40);
+  return data?.length ? `\n\n# What the lecturer said about the exam (from lecture recordings: weigh these heavily)\n${data.map((m: { text: string }) => `- ${m.text}`).join("\n")}` : "";
 }

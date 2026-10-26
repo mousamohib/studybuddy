@@ -72,3 +72,10 @@ export function demoChat(question: string): string {
   const q = question.length > 120 ? question.slice(0, 120) + "…" : question;
   return `**Demo answer** (real AI isn't switched on yet)\n\nYou asked: _${q}_\n\n**The big idea:** a short, plain-English explanation comes first.\n\n**Example:** then a small, concrete example.\n\n**The formula:** $$E = mc^2$$ where $E$ is energy, $m$ is mass and $c$ is the speed of light.\n\n**In simple terms:** a one-line summary to remember.`;
 }
+
+export function demoRecording(text: string, name: string): Outline {
+  const o = demoOutline(text, name);
+  const hints = (text.match(/[^.!?\n]*(exam|midterm|final|important|will be on|know this|test you)[^.!?\n]*[.!?]/gi) ?? []).map((x) => x.trim()).slice(0, 4);
+  return { ...o, kind: "recording", exam_hints: hints, style: ["(Demo mode: real AI notes how your lecturer explains things here.)"] };
+}
+export const DEMO_TRANSCRIPT = "[t. 0:00]\n(Demo mode: the recording would be transcribed here once transcription is turned on. For now, upload the captions file (.vtt or .srt) from Panopto, Zoom, YouTube or Echo360 instead.)";

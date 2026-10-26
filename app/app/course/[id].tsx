@@ -67,7 +67,8 @@ export default function CourseHub() {
   const next = data.deadlines.filter((d) => !d.done && daysUntil(d.due_at) >= 0)[0];
   const ready = data.materials.filter((m) => m.status === 'ready').length;
   const topics = data.materials.reduce((a, m) => a + (m.outline?.topics?.length ?? 0), 0);
-  const chat = (mode: ChatMode) => openNewChat({ courseId: c.id, mode, topic: '', courseCode: c.code })
+  const hasRec = data.materials.some((m) => m.status === 'ready' && m.outline?.kind === 'recording');
+  const chat = (mode: ChatMode, modifier?: string) => openNewChat({ courseId: c.id, mode, topic: '', courseCode: c.code, modifier })
     .catch(() => setTab('chats'));
   const counts: Record<Section, string> = {
     materials: `${ready} ready`,
@@ -100,6 +101,7 @@ export default function CourseHub() {
             <Quick main icon={ic('bubble.left.fill', 'chat_bubble')} label="Ask a question" sub={`About ${c.code}`} onPress={() => chat('ask')} />
             <Quick icon={ic('graduationcap.fill', 'school')} label="Teach me" sub="Learn a topic" onPress={() => chat('lesson')} />
             <Quick icon={ic('checkmark.circle.fill', 'task_alt')} label="Quiz me" sub="Practice questions" onPress={() => chat('practice')} />
+            {hasRec && <Quick icon={ic('mic.fill', 'mic')} label="Like my lecture" sub="Explained their way" onPress={() => chat('lesson', 'like_lecture')} />}
             <Quick icon={ic('arrow.up.doc.fill', 'upload_file')} label="Upload files" sub="Slides, notes, PDFs" onPress={() => { setTab('materials'); setAddNonce((n) => n + 1); }} />
           </View>
         </View>

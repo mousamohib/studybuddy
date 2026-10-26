@@ -4,7 +4,7 @@ import { ic, type IconName } from '@/components/ui';
 export type Section = 'materials' | 'deadlines' | 'revision' | 'chats' | 'memory' | 'settings';
 
 export const SECTIONS: { key: Section; label: string; blurb: string; icon: IconName; color: string }[] = [
-  { key: 'materials', label: 'Files', blurb: 'Slides, notes, handouts and assignment files', icon: ic('folder.fill', 'folder'), color: '#3442F5' },
+  { key: 'materials', label: 'Files', blurb: 'Slides, notes, lecture recordings and assignment files', icon: ic('folder.fill', 'folder'), color: '#3442F5' },
   { key: 'deadlines', label: 'Deadlines', blurb: 'Exams, assignments and due dates', icon: ic('flag.fill', 'flag'), color: '#F0457E' },
   { key: 'revision', label: 'Exam prep', blurb: 'Cheat sheets, revision sheets and practice papers', icon: ic('pencil.and.list.clipboard', 'quiz'), color: '#0F9F74' },
   { key: 'chats', label: 'Tutor', blurb: 'Ask, learn a topic, practise or get assignment help', icon: ic('bubble.left.and.bubble.right.fill', 'forum'), color: '#8B4DF0' },

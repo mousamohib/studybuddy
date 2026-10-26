@@ -26,6 +26,8 @@ export function Chats({ data }: { data: CourseData }) {
   const accent = useAccent().color;
   const notice = useNotice();
   const [mode, setMode] = useState<ChatMode>('ask');
+  const hasRec = data.materials.some((m) => m.status === 'ready' && m.outline?.kind === 'recording');
+  const [likeLecture, setLikeLecture] = useState(false);
   const [topic, setTopic] = useState('');
   const asg = data.deadlines.filter(isAssignment);
   const [asgId, setAsgId] = useState<string | null>(null);
@@ -35,7 +37,7 @@ export function Chats({ data }: { data: CourseData }) {
     const d = mode === 'assignment' ? asg.find((x) => x.id === (asgId ?? asg[0]?.id)) : null;
     if (mode === 'assignment' && !d) { notice('Add an assignment first', 'Create it in Materials or Deadlines.'); return; }
     if (mode === 'ask' && !topic.trim()) { notice('Type your question first'); return; }
-    try { await openNewChat({ courseId: c.id, mode, topic, deadline: d, courseCode: c.code }); setTopic(''); }
+    try { await openNewChat({ courseId: c.id, mode, topic, deadline: d, courseCode: c.code, modifier: likeLecture && hasRec ? 'like_lecture' : undefined }); setTopic(''); }
     catch (e) { notice("Couldn't start the chat", (e as Error).message); }
   }
 
@@ -69,6 +71,19 @@ export function Chats({ data }: { data: CourseData }) {
             );
           })}</Row>
         ) : <T variant="small" muted>No assignments in this course yet.</T>)}
+        {hasRec && (
+          <Pressy onPress={() => setLikeLecture(!likeLecture)} accessibilityRole="switch" accessibilityState={{ checked: likeLecture }}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 10, padding: 12, borderRadius: radius.md, borderWidth: 2, borderColor: likeLecture ? '#E5385F' : 'transparent', backgroundColor: likeLecture ? tint('#E5385F', t.dark ? 0.2 : 0.1) : t.surface }}>
+            <Icon name={ic('mic.fill', 'mic')} size={24} color={likeLecture ? '#FF7AA8' : t.muted} />
+            <View style={{ flex: 1 }}>
+              <T variant="strong">Explain it like my lecture</T>
+              <T variant="small" muted>Uses your lecture recordings: the same order, examples and wording your lecturer used.</T>
+            </View>
+            <View style={{ width: 22, height: 22, borderRadius: 5, borderWidth: 2, borderColor: likeLecture ? '#E5385F' : t.muted, backgroundColor: likeLecture ? '#E5385F' : 'transparent', alignItems: 'center', justifyContent: 'center' }}>
+              {likeLecture && <Icon name={ic('checkmark', 'check')} size={14} color="#FFFFFF" />}
+            </View>
+          </Pressy>
+        )}
         <Field placeholder={PLACEHOLDER[mode]} value={topic} onChangeText={setTopic} multiline />
         <Button title="Start chat" icon={ic('arrow.right', 'arrow_forward')} onPress={start} />
       </View>

@@ -14,6 +14,7 @@ export const RESHAPE_OPTIONS = [
   { key: 'maths', label: 'More mathematical' },
   { key: 'intuition', label: 'More intuition and theory' },
   { key: 'example', label: 'Give an example' },
+  { key: 'like_lecture', label: 'Like my lecture' },
   { key: 'quiz', label: 'Quiz me on this' },
 ];
 

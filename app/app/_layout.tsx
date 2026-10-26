@@ -18,6 +18,7 @@ import { MenuProvider } from '@/components/Menu';
 import { useColorScheme } from '@/components/useColorScheme';
 import { AuthProvider, useAccount } from '@/lib/auth';
 import { refreshPhoneSchedule } from '@/lib/reminders';
+import { syncFeedsIfStale } from '@/lib/calendarFeeds';
 import { font, themes } from '@/lib/theme';
 
 export { ErrorBoundary } from 'expo-router';
@@ -51,7 +52,8 @@ function RootNav() {
   useEffect(() => {
     if (!session || !onboarded) return;
     refreshPhoneSchedule().catch(() => {});
-    const sub = AppState.addEventListener('change', (s) => { if (s === 'active') refreshPhoneSchedule().catch(() => {}); });
+    syncFeedsIfStale();
+    const sub = AppState.addEventListener('change', (s) => { if (s === 'active') { refreshPhoneSchedule().catch(() => {}); syncFeedsIfStale(); } });
     return () => sub.remove();
   }, [session, onboarded]);
 
@@ -68,6 +70,7 @@ function RootNav() {
             <Stack.Screen name="course/[id]" options={{ title: '' }} />
             <Stack.Screen name="chat/[id]" options={{ title: 'Chat' }} />
             <Stack.Screen name="doc/[id]" options={{ title: '' }} />
+            <Stack.Screen name="connect-calendar" options={{ title: 'School calendar' }} />
             <Stack.Screen name="paywall" options={{ presentation: 'modal', title: 'Scrawlie Pro' }} />
           </Stack.Protected>
           <Stack.Protected guard={!!session && !onboarded}>

@@ -6,7 +6,7 @@ import { demoDoc, demoPlan, demoSyllabus } from "../_shared/demo.ts";
 import { background, cors, getCtx, json, parseJSON, type Ctx } from "../_shared/http.ts";
 import { JOBS } from "../_shared/limits.ts";
 import {
-  type Course, daysUntil, deadlinesText, fmtDate, materialsText, type Outline, outlineText, type Profile, rulesBlock,
+  type Course, daysUntil, deadlinesText, fmtDate, lectureHints, materialsText, type Outline, outlineText, type Profile, rulesBlock,
 } from "../_shared/prompts.ts";
 
 const KINDS = ["syllabus", "announcement", "plan", "weekly_sheet", "exam_sheet", "derivation_sheet", "paper"] as const;
@@ -227,7 +227,7 @@ Include every date in range.`);
       const qs = questionMats(materials as Mat[], c.id);
       const qsrc = qs.length ? await materialsText(ctx.admin, ctx.user.id, qs.map((q) => q.id), 15_000) : "";
       const src = await materialsText(ctx.admin, ctx.user.id, [m.id], 40_000);
-      const r = await ask(ctx, "weekly_sheet", `${rulesBlock(profile, c)}
+      const r = await ask(ctx, "weekly_sheet", `${rulesBlock(profile, c)}${await lectureHints(ctx.admin, ctx.user.id, c.id)}
 
 # Task
 Write a MIDTERM REVISION SHEET for ${c.code}, "${title}" (preparing for ${testNote(deadlines, c.id)}). It must fully prepare the student for this lecture on the exam: everything examinable, explained openly and clearly with examples, no padding.
@@ -277,7 +277,7 @@ ${src}`);
     else {
       const qs = questionMats(materials as Mat[], c.id);
       const qsrc = qs.length ? await materialsText(ctx.admin, ctx.user.id, qs.map((q) => q.id), 20_000) : "";
-      const r = await ask(ctx, "paper", `${rulesBlock(profile, c)}
+      const r = await ask(ctx, "paper", `${rulesBlock(profile, c)}${await lectureHints(ctx.admin, ctx.user.id, c.id)}
 
 # Task
 Write PRACTICE PAPER ${n} for ${c.code} to prepare for: ${testNote(deadlines, c.id, job.input.deadline_id as string | undefined)}.
@@ -358,7 +358,7 @@ For EVERY derivation that could be asked, grouped under a ## heading per lecture
 - **Result:** the final formula as a display equation.
 - **Memory hook:** one line summarising the chain of steps.
 If a lecture has no derivations, say so in one line. Very simple English. No "see slide N".`;
-    const r = await ask(ctx, kind, `${rulesBlock(profile, c)}\n\n# Task\n${task}\nMarkdown with LaTeX ($…$ inline, $$…$$ display).${qsrc ? `\n\n# Sample questions (to know what matters most)\n${qsrc}` : ""}\n\n${src}`);
+    const r = await ask(ctx, kind, `${rulesBlock(profile, c)}${await lectureHints(ctx.admin, ctx.user.id, c.id)}\n\n# Task\n${task}\nMarkdown with LaTeX ($…$ inline, $$…$$ display).${qsrc ? `\n\n# Sample questions (to know what matters most)\n${qsrc}` : ""}\n\n${src}`);
     body = r.text + (r.truncated ? "\n\n> *Cut off because it was very long. Generate it again to retry.*" : "");
   }
   const { md } = splitSkipped(body);

@@ -15,7 +15,7 @@ export function starterFor(mode: ChatMode, topic: string, courseCode?: string, d
 }
 
 /** Creates a chat with the right files attached and opens it, optionally sending a first message. */
-export async function openNewChat(o: { courseId: string | null; mode: ChatMode; topic?: string; deadline?: Deadline | null; courseCode?: string; materialIds?: string[]; title?: string }) {
+export async function openNewChat(o: { courseId: string | null; mode: ChatMode; topic?: string; deadline?: Deadline | null; courseCode?: string; materialIds?: string[]; title?: string; modifier?: string }) {
   let ids = o.materialIds;
   if (!ids && o.courseId) {
     const q = supabase.from('materials').select('id, deadline_id, outline').eq('course_id', o.courseId).eq('status', 'ready');
@@ -23,7 +23,7 @@ export async function openNewChat(o: { courseId: string | null; mode: ChatMode; 
     ids = (data ?? []).filter((m) => (o.mode === 'assignment' && o.deadline ? m.deadline_id === o.deadline.id : !m.deadline_id)).map((m) => m.id);
   }
   const title = o.title || (o.topic?.trim() ? o.topic.trim().slice(0, 60) : o.mode === 'assignment' && o.deadline ? `${o.deadline.label || o.deadline.kind} help` : 'New chat');
-  const { data: row, error } = await supabase.from('chats').insert({ course_id: o.courseId, mode: o.mode, title, material_ids: ids ?? [], deadline_id: o.deadline?.id ?? null }).select('id').single();
+  const { data: row, error } = await supabase.from('chats').insert({ course_id: o.courseId, mode: o.mode, title, material_ids: ids ?? [], deadline_id: o.deadline?.id ?? null, modifier: o.modifier ?? null }).select('id').single();
   if (error || !row) throw new Error(error?.message ?? "Couldn't start the chat.");
   const start = o.mode === 'ask' ? (o.topic?.trim() || '') : starterFor(o.mode, o.topic ?? '', o.courseCode, o.deadline);
   router.push({ pathname: '/chat/[id]', params: { id: row.id, start } });

@@ -7,7 +7,7 @@ export type Course = { id: string; code: string; name: string | null; colour: st
 export type DeadlineKind = 'assignment' | 'quiz' | 'midterm' | 'final' | 'test' | 'lab' | 'project' | 'other';
 export type Deadline = { id: string; course_id: string; kind: DeadlineKind; label: string | null; due_at: string; covers: string | null; done: boolean; calendar_event_id: string | null };
 export type Topic = { name: string; where?: string; summary?: string };
-export type Material = { id: string; course_id: string; deadline_id: string | null; file_name: string; storage_path: string | null; status: 'uploaded' | 'reading' | 'outlining' | 'ready' | 'error'; chars: number | null; outline: { kind?: string; title?: string; topics?: Topic[]; error?: string; skipped?: string[] } | null; created_at: string };
+export type Material = { id: string; course_id: string; deadline_id: string | null; file_name: string; storage_path: string | null; status: 'uploaded' | 'reading' | 'outlining' | 'ready' | 'error'; chars: number | null; outline: { kind?: string; title?: string; topics?: Topic[]; error?: string; skipped?: string[]; exam_hints?: string[]; style?: string[] } | null; created_at: string };
 export type Doc = { id: string; course_id: string; kind: 'weekly_sheet' | 'exam_sheet' | 'derivation_sheet' | 'paper'; title: string | null; body: string | null; meta: any; share_token: string | null; created_at: string };
 export type MemoryItem = { id: string; course_id: string | null; kind: 'fact' | 'revisit'; text: string; done: boolean; source: string; created_at: string };
 export type ChatRow = { id: string; course_id: string | null; mode: ChatMode; title: string; style: string | null; modifier: string | null; material_ids: string[]; deadline_id: string | null; messages: any[]; updated_at: string };
@@ -66,3 +66,5 @@ export async function runningPlanJob(): Promise<string | null> {
   const { data } = await supabase.from('jobs').select('id').eq('kind', 'plan').eq('status', 'running').gte('created_at', since).order('created_at', { ascending: false }).limit(1);
   return data?.[0]?.id ?? null;
 }
+
+export const isRecording = (m: Pick<Material, 'outline' | 'file_name'>) => m.outline?.kind === 'recording' || /\.(vtt|srt|mp3|m4a|wav|ogg|flac|aac|mp4|m4v|mov|webm|mpeg)$/i.test(m.file_name);

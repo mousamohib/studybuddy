@@ -147,6 +147,12 @@ export default function Profile() {
             ))}</Row>
           </Card>
 
+          <Pressy onPress={() => router.push('/connect-calendar')} style={{ flexDirection: 'row', alignItems: 'center', gap: space.md, padding: space.lg, borderRadius: radius.lg, backgroundColor: t.surface }}>
+            <Icon name={ic('calendar', 'calendar_month')} size={26} color={t.accent} />
+            <View style={{ flex: 1 }}><T variant="strong">School calendar</T><T variant="small" muted>Pull deadlines from Brightspace, Canvas, Moodle or Blackboard automatically.</T></View>
+            <Icon name={ic('chevron.right', 'chevron_right')} size={18} color={t.muted} />
+          </Pressy>
+
           <Card style={{ gap: space.md }}>
             <Row><Icon name={ic('bell.fill', 'notifications')} size={20} color={t.warn} /><T variant="heading">Reminders and calendar</T></Row>
             {!native && <T variant="small" muted>Reminders and calendar sync work in the phone app.</T>}

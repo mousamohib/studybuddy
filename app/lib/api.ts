@@ -21,7 +21,7 @@ async function headers() {
   };
 }
 
-async function post<T>(fn: string, body: unknown): Promise<T> {
+export async function post<T>(fn: string, body: unknown): Promise<T> {
   let res: Response;
   try {
     res = await fetch(`${base()}/${fn}`, { method: 'POST', headers: await headers(), body: JSON.stringify(body) });
@@ -90,7 +90,11 @@ async function readBytes(p: Picked): Promise<ArrayBuffer> {
 const MAX_BYTES = 50 * 1024 * 1024;
 
 /** Uploads one file to a course (or an assignment in it) and starts reading it on the server. */
+const MEDIA = /\.(mp3|m4a|wav|ogg|oga|flac|aac|mp4|m4v|mov|webm|mpeg|mpga)$/i;
+const MEDIA_MAX = 25 * 1024 * 1024;
+
 export async function uploadMaterial(courseId: string, p: Picked, deadlineId: string | null = null): Promise<string> {
+  if (MEDIA.test(p.name) && p.size && p.size > MEDIA_MAX) throw new ApiError('too_large', `${p.name} is a big recording (over 25 MB). Download its captions or transcript instead (a .vtt, .srt or .txt file from Panopto, Zoom, YouTube, Teams or Echo360) and upload that. Or upload just the audio (.mp3/.m4a).`);
   if (p.size && p.size > MAX_BYTES) throw new ApiError('too_large', `${p.name} is over 50 MB.`);
   const { data: s } = await supabase.auth.getSession();
   const uid = s.session!.user.id;

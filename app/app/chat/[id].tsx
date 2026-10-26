@@ -61,12 +61,15 @@ export default function ChatScreen() {
   const list = useRef<FlatList>(null);
   const abort = useRef<AbortController | null>(null);
   const started = useRef(false);
+  const [hasRec, setHasRec] = useState(false);
 
   const load = useCallback(async () => {
     const { data } = await supabase.from('chats').select('*, courses(code)').eq('id', id).maybeSingle();
     if (!data) return;
     setChat(data as ChatRow); setMsgs((data.messages ?? []) as ChatMessage[]); setCode((data as any).courses?.code ?? null);
     if (data.course_id) {
+      supabase.from('materials').select('id').eq('course_id', data.course_id).eq('status', 'ready').filter('outline->>kind', 'eq', 'recording').limit(1)
+        .then(({ data: r }) => setHasRec(!!r?.length));
       const { data: cs } = await supabase.from('courses').select('*').order('created_at');
       const i = (cs ?? []).findIndex((c) => c.id === data.course_id);
       if (i >= 0) setCourseCol(courseColour(cs![i] as Course, i));
@@ -124,7 +127,7 @@ export default function ChatScreen() {
     }
     const last = index === msgs.length - 1;
     open('Change this answer', [
-      ...RESHAPE_OPTIONS.map((o) => ({ label: o.label, onPress: () => o.key === 'quiz' ? reshape(index, o.key, false) : open(`${o.label}`, [
+      ...RESHAPE_OPTIONS.filter((o) => o.key !== 'like_lecture' || hasRec).map((o) => ({ label: o.label, onPress: () => o.key === 'quiz' ? reshape(index, o.key, false) : open(`${o.label}`, [
         { label: 'Just this answer', onPress: () => reshape(index, o.key, false) },
         { label: 'For the rest of this chat', onPress: () => reshape(index, o.key, true) },
         { label: 'Cancel' },
@@ -248,6 +251,7 @@ export default function ChatScreen() {
                 <Action icon={ic('wand.and.stars', 'auto_fix_high')} label="Change it" onPress={() => messageMenu(item, index)} />
                 <Action icon={ic('doc.on.doc', 'content_copy')} label="Copy" onPress={() => { Clipboard.setStringAsync(item.content); haptic.success(); }} />
                 {index === msgs.length - 1 && <Action icon={ic('arrow.clockwise', 'refresh')} label="Again" onPress={() => send('', { regenerate: true })} />}
+                {hasRec && index === msgs.length - 1 && item.shape !== 'like_lecture' && <Action icon={ic('mic.fill', 'mic')} label="Like my lecture" onPress={() => reshape(index, 'like_lecture', false)} />}
               </Row>
             )}
           </View>
