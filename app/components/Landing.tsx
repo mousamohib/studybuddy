@@ -38,6 +38,20 @@ const pickDesk = (): Desk => {
   return DEFAULT_DESK;
 };
 
+// Little hand-drawn bits instead of emoji.
+function Scribble() {
+  return <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden style={{ verticalAlign: 'middle' }}><path d="M12 3.5c.2 5.7-.1 11.3.1 17M4.6 7.6c4.9 2.9 9.9 5.8 14.8 8.8M19.3 7.4c-4.9 3-9.9 5.9-14.8 9" fill="none" stroke="#E5385F" strokeWidth="2.6" strokeLinecap="round" /></svg>;
+}
+function SadFace() {
+  return (
+    <svg width="40" height="40" viewBox="0 0 24 24" aria-hidden style={{ marginLeft: 8, flex: 'none' }}>
+      <path d="M20.2 12c0 4.6-3.7 8.3-8.2 8.2-4.6 0-8.3-3.7-8.2-8.3.1-4.5 3.8-8.2 8.3-8.1 4.5.1 8.2 3.7 8.1 8.2z" fill="#FFE45E" stroke="#1B1E3F" strokeWidth="1.7" />
+      <path d="M8 9.6c.6-.5 1.3-.6 2-.3M16 9.6c-.6-.5-1.3-.6-2-.3M9 16.4c1.8-1.5 4.2-1.5 6 0" fill="none" stroke="#1B1E3F" strokeWidth="1.7" strokeLinecap="round" />
+      <path d="M8.6 11.6c-.6 1.3-1.1 2.2-.6 3 .5.7 1.5.5 1.6-.4.1-.9-.5-1.7-1-2.6z" fill="#5BB8FF" />
+    </svg>
+  );
+}
+
 export default function Landing({ onStart, onSignIn, onLegal }: Props) {
   const [desk] = useState<Desk>(pickDesk);
   const [stage, setStage] = useState<'idle' | 'over' | 'reading' | 'found' | 'planned'>('idle');
@@ -143,7 +157,7 @@ export default function Landing({ onStart, onSignIn, onLegal }: Props) {
         <Notes />
       </header>
 
-      <div className="tapeStrip" aria-hidden><div className="track">{[...CODES, ...CODES].map((c, i) => <span key={i}>{c}<i>✦</i></span>)}</div></div>
+      <div className="tapeStrip" aria-hidden><div className="track">{[...CODES, ...CODES].map((c, i) => <span key={i}>{c}<i><Scribble /></i></span>)}</div></div>
 
       <section id="try" className="try reveal">
         <Head n="1" title="Drag the syllabus in." note="(or just click it)" />
@@ -188,7 +202,7 @@ export default function Landing({ onStart, onSignIn, onLegal }: Props) {
       <section className="tutor reveal">
         <Head n="2" title="Didn't get it? Change the answer." note="tap a tab →" />
         <div className="tutorDesk">
-          <div className="sticky q tilt3d" style={{ background: C.pink }}><Tape />what's a derivative 😭</div>
+          <div className="sticky q tilt3d" style={{ background: C.pink }}><Tape />what's a derivative <SadFace /></div>
           <div className="indexCard tilt3d">
             <div className="tabs">
               {(Object.keys(ANSWERS) as (keyof typeof ANSWERS)[]).map((k) => (

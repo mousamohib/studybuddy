@@ -50,7 +50,7 @@ export function Chats({ data }: { data: CourseData }) {
             return (
               <Pressy key={m} onPress={() => setMode(m)} accessibilityRole="radio" accessibilityState={{ selected: on }}
                 style={{ flexGrow: 1, flexBasis: 150, flexDirection: 'row', alignItems: 'center', gap: 10, padding: 12, borderRadius: radius.md, borderWidth: 2, borderColor: on ? accent : 'transparent', backgroundColor: on ? tint(accent, t.dark ? 0.24 : 0.12) : t.surface }}>
-                <Icon name={MODE_INFO[m].icon} size={20} color={on ? ink(accent, t) : t.muted} />
+                <Icon name={MODE_INFO[m].icon} size={26} color={on ? ink(accent, t) : t.muted} />
                 <View style={{ flex: 1 }}>
                   <T variant="strong" color={on ? ink(accent, t) : t.text}>{MODE_LABEL[m]}</T>
                   <T variant="small" muted>{MODE_INFO[m].blurb}</T>

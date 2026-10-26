@@ -24,7 +24,7 @@ function Quick({ icon, label, sub, onPress, main }: { icon: IconName; label: str
     <Pressy lift onPress={onPress} accessibilityRole="button" accessibilityLabel={label}
       style={[{ flexGrow: 1, flexBasis: 140, flexDirection: 'row', alignItems: 'center', gap: 10, padding: 12, borderRadius: radius.md, backgroundColor: main ? '#1B1E3F' : noteChip },
         Platform.OS === 'web' ? { boxShadow: main ? '0 4px 0 rgba(0,0,0,0.35)' : '0 3px 0 rgba(27,30,63,0.18)' } as object : {}]}>
-      <Icon name={icon} size={20} color={main ? '#FFE45E' : onNote} />
+      <Icon name={icon} size={26} color={main ? '#FFE45E' : onNote} />
       <View style={{ flex: 1 }}>
         <Text style={{ color: main ? '#FFFFFF' : onNote, fontFamily: font.bold, fontSize: 15 }}>{label}</Text>
         <Text numberOfLines={1} style={{ color: main ? 'rgba(255,255,255,0.75)' : onNoteSoft, fontFamily: font.medium, fontSize: 12.5 }}>{sub}</Text>
@@ -117,7 +117,7 @@ export default function CourseHub() {
                   borderColor: on ? x.color : 'transparent', backgroundColor: on ? tint(x.color, t.dark ? 0.28 : 0.14) : t.surface },
                   Platform.OS === 'web' && on ? { boxShadow: `0 4px 0 ${x.color}` } as object : {}]}>
                 <View style={{ flexDirection: wide ? 'row' : 'column', alignItems: wide ? 'center' : 'flex-start', gap: wide ? 8 : 6 }}>
-                  <View style={{ width: 28, height: 28, borderRadius: 8, backgroundColor: x.color, alignItems: 'center', justifyContent: 'center' }}><Icon name={x.icon} size={16} color="#FFFFFF" /></View>
+                  <View style={{ width: 38, height: 38, borderRadius: 8, backgroundColor: x.color, alignItems: 'center', justifyContent: 'center', transform: [{ rotate: `${[-5, 4, -3, 5, -4, 3][SECTIONS.indexOf(x)]}deg` }] }}><Icon name={x.icon} size={24} color="#FFFFFF" /></View>
                   <T variant="strong" style={wide ? { flex: 1 } : { fontSize: 14.5 }} numberOfLines={1}>{x.label}</T>
                 </View>
                 {wide ? <T variant="small" muted numberOfLines={2}>{x.blurb}</T> : null}
@@ -130,7 +130,7 @@ export default function CourseHub() {
 
       <View style={{ gap: 2, paddingTop: space.sm, borderTopWidth: 2, borderColor: tint(cur.color, 0.6) }}>
         <Row style={{ flexWrap: 'nowrap', gap: 10 }}>
-          <Icon name={cur.icon} size={22} color={cur.color === '#3442F5' && t.dark ? '#9AA2FF' : cur.color} />
+          <Icon name={cur.icon} size={30} color={cur.color === '#3442F5' && t.dark ? '#9AA2FF' : cur.color} />
           <T variant="title">{cur.label}</T>
         </Row>
         <T variant="small" muted>{cur.blurb}</T>

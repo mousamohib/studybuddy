@@ -52,7 +52,7 @@ function TabBar({ state, navigation }: BottomTabBarProps) {
             <Pressy accessibilityRole="tab" accessibilityState={{ selected: on }} accessibilityLabel={tab.title} onPress={() => go(navigation, r.key, r.name, on)}>
               <Animated.View layout={LinearTransition.springify().damping(18)}
                 style={{ flexDirection: 'row', alignItems: 'center', gap: 6, height: 46, paddingHorizontal: on ? 16 : 13, borderRadius: 999, backgroundColor: on ? t.accent : 'transparent' }}>
-                <Icon name={tab.icon} size={22} color={on ? t.onAccent : t.muted} />
+                <Icon name={tab.icon} size={25} color={on ? t.onAccent : t.muted} />
                 {on && <Text style={{ color: t.onAccent, fontFamily: font.bold, fontSize: 14 }}>{tab.title}</Text>}
               </Animated.View>
             </Pressy>
@@ -81,7 +81,7 @@ function SideBar({ state, navigation }: BottomTabBarProps) {
           <Pressy accessibilityRole="tab" accessibilityState={{ selected: on }} onPress={() => go(navigation, r.key, r.name, on)}
             style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12, paddingHorizontal: 12, borderRadius: radius.md, backgroundColor: on ? tint(tab.color, t.dark ? 0.22 : 0.14) : 'transparent' }}>
             <View style={{ width: 36, height: 36, borderRadius: 11, alignItems: 'center', justifyContent: 'center', backgroundColor: on ? tab.color : t.surface, transform: [{ rotate: on ? '-6deg' : '0deg' }] }}>
-              <Icon name={tab.icon} size={20} color={on ? '#FFFFFF' : t.muted} />
+              <Icon name={tab.icon} size={24} color={on ? '#FFFFFF' : t.muted} />
             </View>
             <Text style={{ fontFamily: on ? font.bold : font.semi, fontSize: 17, color: on ? t.text : t.muted }}>{tab.title}</Text>
           </Pressy>

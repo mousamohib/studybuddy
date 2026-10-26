@@ -23,10 +23,13 @@ export const haptic = {
 };
 
 /** Icon names per platform: SF Symbols on iPhone, Material Symbols on Android and web. */
+import { Doodle, DOODLES } from './Doodle';
 export type IconName = { ios: string; android: string; web: string };
 export const ic = (ios: string, material: string): IconName => ({ ios, android: material, web: material });
 export function Icon({ name, size = 20, color }: { name: IconName; size?: number; color?: string }) {
   const t = useTheme();
+  // Our own hand-drawn set first; the system symbol only for anything not drawn yet.
+  if (DOODLES[name.web]) return <Doodle name={name.web} size={size} color={color ?? t.text} />;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return <SymbolView name={name as any} tintColor={color ?? t.text} size={size} />;
 }
