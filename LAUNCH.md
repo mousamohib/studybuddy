@@ -14,7 +14,13 @@ Status as of October 2026. Every core feature is built. What's left is mostly ac
 | 6 | Website | Mousa | Host the web version (Netlify, Vercel or EAS Hosting) with a domain, then set `EXPO_PUBLIC_WEB_URL`. Needed for share links, the privacy URL and a landing page. |
 | 7 | Store accounts and builds | Mousa | Apple Developer Program (US$99/year), Google Play (US$25 once). Build with EAS (`npx eas-cli build`). New personal Google Play accounts need a closed test with 12 testers for 14 days before going public. |
 | 8 | Store listings | Mousa | Screenshots, description, age rating (17+ matches the app), Apple privacy labels and Google data-safety form. |
-| 9 | Full test pass with real AI | Both | Large PDFs, scanned PDFs, zips, photos; iPhone, Android and web; a whole week of using the plan. |
+| 9 | Full test pass with real AI | Both | Large PDFs, scanned PDFs, zips, photos; several syllabuses at once; a real Brightspace/Canvas/Moodle calendar link; lecture captions; iPhone, Android and web; a whole week of using the plan. |
+| 10 | Reminders on the website | Claude | The website has no reminders today (phone only). Add an email digest (daily plan + deadlines this week) before promoting a web-first launch. |
+| 11 | Sign in with Google | Claude + Mousa | Students expect it; fewer drop-offs at sign-up. Needs a Google Cloud OAuth client. |
+| 12 | Link previews and SEO | Claude | Page description, social share image and title so links posted on Instagram/TikTok/Discord look right. |
+| 13 | Error tracking and analytics | Claude + Mousa | Sentry + PostHog (with a cookie notice for UK visitors) so you see crashes and where people drop off. |
+| 14 | Name and domain | Mousa | Trademark search for "Scrawlie" in Canada (CIPO) and the UK (IPO), then buy the domain. |
+| 15 | Lecture transcription (optional) | Mousa | OPENAI_API_KEY secret to turn uploaded audio into text (about $0.006/min). Without it, students upload captions files instead. |
 
 ## Should do soon after
 
@@ -26,6 +32,7 @@ Status as of October 2026. Every core feature is built. What's left is mostly ac
 ## Known limits of the current version
 
 - Group project memory is per student: teammates don't share one project space yet.
-- Calendar sync and reminders work in the phone app only, not the website.
+- Phone-calendar sync and reminders work in the phone app only, not the website. (School calendar feeds work everywhere.)
+- Recordings over 25 MB can't be transcribed; students upload captions or audio instead.
 - No change-email or change-password screen yet (password reset by code works).
 - Very large files can hit the server time limit on Supabase's free plan.
