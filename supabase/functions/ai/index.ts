@@ -148,7 +148,7 @@ Markdown. All maths in LaTeX: $…$ inline, $$…$$ on its own line. Code in fen
           const demo = mode === "reshape" ? `**Demo rewrite (${body.style})**\n\n${history[reshapeIndex].original ?? history[reshapeIndex].content}` : demoChat(prompt);
           for (const piece of demo.match(/.{1,24}/gs) ?? []) { text += piece; send({ t: "delta", v: piece }); await new Promise((r) => setTimeout(r, 25)); }
         } else {
-          for await (const ev of streamAI({ tier: job.tier, maxTokens: job.maxTokens, system, messages })) {
+          for await (const ev of streamAI({ tier: job.tier, maxTokens: job.maxTokens, system, messages, cache: true })) {
             if (ev.delta) { text += ev.delta; send({ t: "delta", v: ev.delta }); }
             if (ev.done) ({ inTok, outTok, truncated } = ev.done);
           }

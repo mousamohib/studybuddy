@@ -23,7 +23,7 @@ export default function Paywall() {
 
   async function buy() {
     if (await startPurchase(period)) { await refresh(); router.back(); }
-    else notice('Payments are coming soon', "Subscriptions aren't switched on yet. Everything in Pro is unlocked during your trial.");
+    else notice('Pro is coming soon', "Scrawlie is in beta and payments aren't switched on yet. The free plan resets every month.");
   }
 
   const Option = ({ k, title, price, note }: { k: 'monthly' | 'yearly'; title: string; price: string; note?: string }) => {

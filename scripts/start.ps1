@@ -32,16 +32,27 @@ if (-not $key) {
   Read-Host "Press Enter to close"; exit 1
 }
 # Each migration that adds a table: the table name that proves it has been run.
+# Newer ones bump public.schema_version().
 $checks = @(
-  @{ file = "0003_calendar_feeds_and_recordings.sql"; table = "calendar_feeds" }
+  @{ file = "0003_calendar_feeds_and_recordings.sql"; table = "calendar_feeds" },
+  @{ file = "0004_beta_no_trial.sql"; version = 4 }
 )
+$headers = @{ apikey = $key; Authorization = "Bearer $key" }
+$dbVersion = 0
+try {
+  $v = Invoke-RestMethod -Method Post -Uri "https://$ref.supabase.co/rest/v1/rpc/schema_version" -Headers $headers -ContentType "application/json" -Body "{}" -TimeoutSec 20
+  $dbVersion = [int]$v
+} catch { }
 foreach ($c in $checks) {
-  $status = 0
-  try {
-    $r = Invoke-WebRequest -UseBasicParsing -Uri "https://$ref.supabase.co/rest/v1/$($c.table)?select=id&limit=1" -Headers @{ apikey = $key; Authorization = "Bearer $key" } -TimeoutSec 20
-    $status = $r.StatusCode
-  } catch { if ($_.Exception.Response) { $status = [int]$_.Exception.Response.StatusCode } }
-  if ($status -eq 200) { Write-Host "   $($c.file): already done" -ForegroundColor Green; continue }
+  $done = $false
+  if ($c.version) { $done = $dbVersion -ge $c.version }
+  else {
+    try {
+      $r = Invoke-WebRequest -UseBasicParsing -Uri "https://$ref.supabase.co/rest/v1/$($c.table)?select=id&limit=1" -Headers $headers -TimeoutSec 20
+      $done = $r.StatusCode -eq 200
+    } catch { $done = $false }
+  }
+  if ($done) { Write-Host "   $($c.file): already done" -ForegroundColor Green; continue }
   $sqlPath = Join-Path $root "supabase\migrations\$($c.file)"
   Get-Content $sqlPath -Raw | Set-Clipboard
   Start-Process "https://supabase.com/dashboard/project/$ref/sql/new"

@@ -10,8 +10,9 @@ export const LIMITS: Record<Plan, { courses: number; storageMB: number } & Recor
 // Which AI tier each job uses (spec: Version 1 features).
 export type Tier = "fast" | "standard" | "strong";
 export const JOBS: Record<string, { tier: Tier; counts: UsageField | null; maxTokens: number }> = {
-  chat: { tier: "standard", counts: "tutor_messages", maxTokens: 4000 },
-  reshape: { tier: "standard", counts: "tutor_messages", maxTokens: 4000 },
+  // Tutor chats use the fast, cheaper model during the beta (switch back to "standard" for higher quality).
+  chat: { tier: "fast", counts: "tutor_messages", maxTokens: 4000 },
+  reshape: { tier: "fast", counts: "tutor_messages", maxTokens: 4000 },
   upload: { tier: "fast", counts: "uploads", maxTokens: 3000 },
   outline: { tier: "fast", counts: null, maxTokens: 3000 },
   vision: { tier: "standard", counts: null, maxTokens: 4000 },
