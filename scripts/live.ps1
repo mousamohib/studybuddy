@@ -6,6 +6,7 @@ Write-Host "Watching for updates... (press Ctrl+C to stop)" -ForegroundColor Cya
 while ($true) {
   $before = git rev-parse HEAD
   git pull --ff-only --quiet 2>$null
+  if ($LASTEXITCODE -ne 0) { git checkout -- . 2>$null; git pull --ff-only --quiet 2>$null }  # line-ending leftovers blocking the update
   $after = git rev-parse HEAD
   if ($before -ne $after) {
     $msg = git log -1 --pretty=%s
