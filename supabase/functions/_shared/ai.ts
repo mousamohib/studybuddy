@@ -9,6 +9,16 @@ export type Msg = { role: "user" | "assistant"; content: Content };
 
 export const BUDGET_MESSAGE = "Scrawlie's AI is taking a break: the beta has used this month's AI allowance. Your plan, deadlines, calendar and files all still work, and the AI comes back next month (or sooner as we add more).";
 
+export type Settings = { ai_paused: boolean; ai_budget_usd: number; free_cap_usd: number; pro_cap_usd: number };
+/** Admin-set settings (app_settings row), falling back to secrets, then beta defaults. */
+export async function getSettings(admin: SupabaseClient): Promise<Settings> {
+  const env = (k: string, d: number) => { const v = Number(Deno.env.get(k) ?? ""); return Number.isFinite(v) && v > 0 ? v : d; };
+  const base: Settings = { ai_paused: false, ai_budget_usd: env("AI_MONTHLY_BUDGET_USD", 24), free_cap_usd: env("USER_MONTHLY_COST_USD_FREE", 0.5), pro_cap_usd: env("USER_MONTHLY_COST_USD_PRO", 8) };
+  const { data } = await admin.from("app_settings").select("ai_paused, ai_budget_usd, free_cap_usd, pro_cap_usd").eq("id", 1).maybeSingle();
+  if (!data) return base;
+  return { ai_paused: !!data.ai_paused, ai_budget_usd: Number(data.ai_budget_usd), free_cap_usd: Number(data.free_cap_usd), pro_cap_usd: Number(data.pro_cap_usd) };
+}
+
 export const isDemo = () => Deno.env.get("AI_MODE") === "demo" || !Deno.env.get("ANTHROPIC_API_KEY");
 
 export class LimitError extends Error {
@@ -31,13 +41,14 @@ export async function checkAllowed(admin: SupabaseClient, uid: string, jobKey: s
         { field: job.counts, used, limit, plan });
     }
   }
-  const cap = Number(Deno.env.get(plan === "pro" ? "USER_MONTHLY_COST_USD_PRO" : "USER_MONTHLY_COST_USD_FREE") ?? (plan === "pro" ? 8 : 0.5));
+  const st = await getSettings(admin);
+  if (st.ai_paused) throw new LimitError(503, "ai_paused", "Scrawlie's AI is paused for a moment. Your plan, deadlines, calendar and files all still work. Try again a bit later.");
+  const cap = plan === "pro" ? st.pro_cap_usd : st.free_cap_usd;
   if (Number(usage?.cost_usd ?? 0) >= cap) throw new LimitError(402, "cost_cap", "You've reached this month's AI usage cap.");
-  // Total AI spend across everyone this month. Beta default: US$24, just under the £20 of credits.
-  const budget = Number(Deno.env.get("AI_MONTHLY_BUDGET_USD") ?? 24);
-  const { data: rows } = await admin.from("usage").select("cost_usd").eq("month", month);
+  const month2 = month;
+  const { data: rows } = await admin.from("usage").select("cost_usd").eq("month", month2);
   const spent = (rows ?? []).reduce((a: number, r: { cost_usd: number }) => a + Number(r.cost_usd), 0);
-  if (spent >= budget) throw new LimitError(503, "budget_reached", BUDGET_MESSAGE);
+  if (spent >= st.ai_budget_usd) throw new LimitError(503, "budget_reached", BUDGET_MESSAGE);
   return plan;
 }
 

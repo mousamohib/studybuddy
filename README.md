@@ -131,3 +131,13 @@ Defined in `supabase/functions/_shared/limits.ts` (enforced on the server) and m
 | Weekly revision sheets | 4 | Unlimited |
 | Exam and derivation sheets | 1 | 10 |
 | Practice papers | 1 | 20 |
+
+## Admin dashboard
+
+Admins see an **Admin dashboard** card at the top of the You tab: users and sign-ups, active students, paying/given Pro, AI spend against the budget, reports, and controls (pause AI, budgets, give/remove Pro, reset limits, ban, delete). It never shows students' chats, files or notes.
+
+Who is an admin is a server secret, so nobody can make themselves one from the app:
+
+```
+npx supabase secrets set ADMIN_EMAILS=you@email.com,friend@email.com
+```

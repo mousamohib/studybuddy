@@ -1,5 +1,5 @@
 import { router, useFocusEffect } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Platform, Pressable, Switch, Text, View } from 'react-native';
 import { Button, Card, Field, Icon, ic, LinkText, ListRow, Meter, Pressy, Row, Screen, Section, T } from '@/components/ui';
 import { SchoolPicker } from '@/components/SchoolPicker';
@@ -10,6 +10,7 @@ import { USAGE_LABELS, type UsageField } from '@/lib/limits';
 import { askCalendarPermission, askNotificationPermission, refreshPhoneSchedule } from '@/lib/reminders';
 import { STYLE_LOOK, STYLE_OPTIONS } from '@/lib/styles';
 import { startTour } from '@/lib/tour';
+import { isAdmin } from '@/lib/admin';
 import { supabase } from '@/lib/supabase';
 import { font, radius, space, tint, useTheme } from '@/lib/theme';
 
@@ -27,6 +28,8 @@ export default function Profile() {
   const [school, setSchool] = useState('');
   const [editSchool, setEditSchool] = useState(false);
   const uid = session!.user.id;
+  const [admin, setAdmin] = useState(false);
+  useEffect(() => { isAdmin().then(setAdmin); }, []);
 
   useFocusEffect(useCallback(() => {
     refresh();
@@ -108,6 +111,13 @@ export default function Profile() {
           {plan === 'free' || trialEndsAt ? <Button title="Upgrade" kind="highlight" small onPress={() => router.push('/paywall')} /> : null}
         </Row>
       </View>
+      {admin && (
+        <Pressy onPress={() => router.push('/admin')} style={{ flexDirection: 'row', alignItems: 'center', gap: space.md, padding: space.lg, borderRadius: radius.lg, backgroundColor: tint('#E5385F', t.dark ? 0.22 : 0.12), borderWidth: 2, borderColor: '#E5385F' }}>
+          <Icon name={ic('checkmark.shield.fill', 'verified_user')} size={26} color="#FF7AA8" />
+          <View style={{ flex: 1 }}><T variant="strong">Admin dashboard</T><T variant="small" muted>Users, subscriptions, AI spend, reports and controls.</T></View>
+          <Icon name={ic('chevron.right', 'chevron_right')} size={18} color={t.muted} />
+        </Pressy>
+      )}
       <Section title="Used this month">
         {fields.map((f, i) => <Meter key={f} label={USAGE_LABELS[f]} used={usage[f]} limit={limits[f]} color={['#3442F5', '#F0457E', '#0F9F74', '#F07A12', '#8B4DF0'][i]} />)}
       </Section>

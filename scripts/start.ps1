@@ -35,7 +35,8 @@ if (-not $key) {
 # Newer ones bump public.schema_version().
 $checks = @(
   @{ file = "0003_calendar_feeds_and_recordings.sql"; table = "calendar_feeds" },
-  @{ file = "0004_beta_no_trial.sql"; version = 4 }
+  @{ file = "0004_beta_no_trial.sql"; version = 4 },
+  @{ file = "0005_admin.sql"; version = 5 }
 )
 $headers = @{ apikey = $key; Authorization = "Bearer $key" }
 $dbVersion = 0
@@ -79,6 +80,17 @@ if ($fnCommit -ne $last) {
   if ($ok) { New-Item -ItemType Directory -Force (Split-Path $marker) | Out-Null; Set-Content $marker $fnCommit; Write-Host "   All functions deployed" -ForegroundColor Green }
 } else {
   Write-Host "   Already up to date" -ForegroundColor Green
+}
+
+# ---------- admin ----------
+$adminMarker = Join-Path $root "supabase\.temp\admin-set"
+if (-not (Test-Path $adminMarker)) {
+  Say "One-time: who should be an admin?" "Yellow"
+  $emails = Read-Host "   Type the email(s) you sign in to Scrawlie with, separated by commas (or press Enter to skip)"
+  if ($emails.Trim()) {
+    npx supabase secrets set "ADMIN_EMAILS=$($emails.Trim())" --project-ref $ref
+    if ($LASTEXITCODE -eq 0) { Set-Content $adminMarker $emails.Trim(); Write-Host "   Admin set. Find 'Admin dashboard' at the top of the You tab." -ForegroundColor Green }
+  }
 }
 
 # ---------- website ----------

@@ -70,6 +70,7 @@ function RootNav() {
             <Stack.Screen name="course/[id]" options={{ title: '' }} />
             <Stack.Screen name="chat/[id]" options={{ title: 'Chat' }} />
             <Stack.Screen name="doc/[id]" options={{ title: '' }} />
+            <Stack.Screen name="admin" options={{ title: 'Admin' }} />
             <Stack.Screen name="connect-calendar" options={{ title: 'School calendar' }} />
             <Stack.Screen name="paywall" options={{ presentation: 'modal', title: 'Scrawlie Pro' }} />
           </Stack.Protected>
