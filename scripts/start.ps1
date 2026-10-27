@@ -24,7 +24,7 @@ Say "2/4  Checking the database..."
 $envFile = Join-Path $root "app\.env"
 $key = ""
 if (Test-Path $envFile) {
-  $line = Get-Content $envFile | Where-Object { $_ -match "^EXPO_PUBLIC_SUPABASE_ANON_KEY=" } | Select-Object -First 1
+  $line = Get-Content $envFile | Where-Object { $_ -match "^\s*EXPO_PUBLIC_SUPABASE_ANON_KEY\s*=" } | Select-Object -First 1
   if ($line) { $key = ($line -split "=", 2)[1].Trim().Trim('"') }
 }
 if (-not $key) {
