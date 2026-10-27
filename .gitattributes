@@ -1,0 +1,7 @@
+# Same line endings on every computer, so updates never get blocked by Windows/Mac differences.
+* text=auto eol=lf
+*.bat text eol=crlf
+*.png binary
+*.jpg binary
+*.ico binary
+*.ttf binary
