@@ -1,0 +1,432 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+@font-face { font-family: Bric; src: url(assets/BricolageGrotesque_800ExtraBold.ttf); }
+@font-face { font-family: Fig; src: url(assets/Figtree_500Medium.ttf); font-weight: 500; }
+@font-face { font-family: Fig; src: url(assets/Figtree_600SemiBold.ttf); font-weight: 600; }
+@font-face { font-family: Fig; src: url(assets/Figtree_700Bold.ttf); font-weight: 700; }
+@font-face { font-family: Hand; src: url(assets/Caveat_700Bold.ttf); }
+html, body { margin: 0; background: #000; }
+#stage { position: relative; overflow: hidden; background: radial-gradient(120% 90% at 50% 40%, #1d4a41 0%, #143630 55%, #0e2823 100%); }
+#grid { position: absolute; inset: -2px; opacity: .55;
+  background-image: linear-gradient(rgba(255,255,255,.06) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.06) 1px, transparent 1px),
+    linear-gradient(rgba(255,255,255,.12) 1.5px, transparent 1.5px), linear-gradient(90deg, rgba(255,255,255,.12) 1.5px, transparent 1.5px);
+  background-size: 30px 30px, 30px 30px, 150px 150px, 150px 150px; }
+.abs { position: absolute; left: 0; top: 0; will-change: transform, opacity; }
+#gl { position: absolute; inset: 0; z-index: 5; pointer-events: none; }
+#L { position: absolute; inset: 0; z-index: 2; }
+#T { position: absolute; inset: 0; z-index: 8; }
+.head { font-family: Bric; color: #F4F5FF; text-align: center; letter-spacing: -0.02em; line-height: 1.02; white-space: nowrap; }
+.head .w { display: inline-block; margin: 0 .12em; transform-origin: 50% 80%; }
+.hand { font-family: Hand; letter-spacing: 0; }
+.y { color: #FFE45E; } .p { color: #FF8FB8; } .g { color: #7BE3B8; } .b { color: #9AA5FF; }
+.note { font-family: Hand; color: #1B1E3F; display: flex; align-items: center; justify-content: center; text-align: center; line-height: 1.05; box-shadow: 0 14px 22px -8px rgba(0,0,0,.55), 0 2px 0 rgba(0,0,0,.12); }
+.note::before { content: ''; position: absolute; top: -11px; left: 30%; width: 40%; height: 22px; background: rgba(255,255,255,.55); transform: rotate(-3deg); }
+.win { background: #143630; box-shadow: 0 40px 80px -20px rgba(0,0,0,.75), 0 0 0 2px rgba(255,255,255,.08); overflow: hidden; transform-origin: 50% 50%; }
+.win .bar { height: 44px; background: #0d241f; display: flex; align-items: center; gap: 9px; padding: 0 16px; }
+.win .bar i { width: 13px; height: 13px; border-radius: 50%; display: block; }
+.win .url { margin-left: 18px; flex: 1; max-width: 420px; height: 26px; background: rgba(255,255,255,.08); color: rgba(255,255,255,.7); font: 600 15px Fig; display: flex; align-items: center; padding: 0 12px; }
+.win .view { position: absolute; left: 0; right: 0; top: 44px; bottom: 0; overflow: hidden; }
+.win .view img { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
+.bubble { font: 600 30px Fig; color: #1B1E3F; background: #fff; padding: 16px 22px; white-space: nowrap; box-shadow: 0 14px 30px -10px rgba(0,0,0,.6); display: flex; align-items: center; gap: 12px; }
+.bubble b { color: #0F9F74; }
+.chip { font: 700 30px Fig; color: #1B1E3F; padding: 12px 20px; white-space: nowrap; box-shadow: 0 10px 20px -8px rgba(0,0,0,.6); }
+.file { width: 210px; height: 260px; background: #fff; box-shadow: 0 18px 30px -10px rgba(0,0,0,.6); font: 700 19px Fig; color: #1B1E3F; padding: 18px; box-sizing: border-box; }
+.file .tag { display: inline-block; background: #E5385F; color: #fff; font: 700 15px Fig; padding: 3px 8px; margin-bottom: 14px; }
+.file .ln { height: 8px; background: #E6E8F1; margin: 9px 0; }
+.phone { background: #0b0d14; padding: 14px; border-radius: 46px; box-shadow: 0 40px 70px -20px rgba(0,0,0,.8); }
+.phone img { display: block; border-radius: 34px; }
+.cta { font: 800 44px Fig; color: #1B1E3F; background: #FFE45E; padding: 22px 46px; box-shadow: 0 8px 0 #C9A300, 0 24px 34px -10px rgba(0,0,0,.6); white-space: nowrap; }
+.sub { font: 600 34px Fig; color: rgba(244,245,255,.86); text-align: center; white-space: nowrap; }
+.conf { width: 16px; height: 22px; }
+</style></head>
+<body>
+<div id="stage"><div id="grid"></div><div id="L"></div><canvas id="gl"></canvas><div id="T"></div></div>
+<script type="module">
+import { createMascotRenderer } from './mascot.js';
+const q = new URLSearchParams(location.search);
+const W = +(q.get('w') || 1920), H = +(q.get('h') || 1080), V = H > W;
+const stage = document.getElementById('stage'); stage.style.width = W + 'px'; stage.style.height = H + 'px';
+const glc = document.getElementById('gl'); glc.width = W; glc.height = H; glc.style.width = W + 'px'; glc.style.height = H + 'px';
+const mascot = createMascotRenderer(glc, W, H);
+const L = document.getElementById('L'), T = document.getElementById('T');
+
+// ---------- timing: 120 BPM, a beat every 0.5s, a bar every 2s ----------
+const BEAT = 0.5;
+const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
+const seg = (t, a, b) => clamp((t - a) / (b - a));
+const lerp = (a, b, k) => a + (b - a) * k;
+const oC = (k) => 1 - Math.pow(1 - k, 3);
+const ioC = (k) => (k < .5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2);
+const oB = (k) => { const c = 1.9; return 1 + (c + 1) * Math.pow(k - 1, 3) + c * Math.pow(k - 1, 2); };
+const beatPulse = (t, amt = 1) => { const f = (t / BEAT) % 1; return amt * Math.max(0, 1 - f * 3.2); };
+const kf = (t, pts, ease = ioC) => { // [[t, v], ...] piecewise
+  if (t <= pts[0][0]) return pts[0][1];
+  for (let i = 1; i < pts.length; i++) if (t <= pts[i][0]) { const [t0, v0] = pts[i - 1], [t1, v1] = pts[i]; return lerp(v0, v1, ease(seg(t, t0, t1))); }
+  return pts[pts.length - 1][1];
+};
+const mk = (parent, cls, html = '') => { const e = document.createElement('div'); e.className = 'abs ' + cls; e.innerHTML = html; parent.appendChild(e); return e; };
+const place = (e, x, y, { s = 1, r = 0, o = 1, ax = .5, ay = .5, rx = 0, ry = 0 } = {}) => {
+  e.style.opacity = o; e.style.display = o <= 0.001 ? 'none' : 'block';
+  e.style.transform = `translate(${x}px, ${y}px) translate(${-ax * 100}%, ${-ay * 100}%) perspective(1600px) rotateX(${rx}deg) rotateY(${ry}deg) rotate(${r}deg) scale(${s})`;
+};
+/** pop-in (0→1 with overshoot) and out between [a, b]; returns {s, o} */
+const popIO = (t, a, b, inDur = .32, outDur = .22) => {
+  if (t < a || t > b + outDur) return { s: 0, o: 0 };
+  if (t < a + inDur) { const k = seg(t, a, a + inDur); return { s: lerp(.4, 1, oB(k)), o: clamp(k * 2.5) }; }
+  if (t > b) { const k = seg(t, b, b + outDur); return { s: lerp(1, .85, k), o: 1 - k }; }
+  return { s: 1, o: 1 };
+};
+
+// ---------- kinetic headings: each word lands on its own beat ----------
+const heads = [];
+/** words: [[text, cls, atTime], ...]; lines split with '\n' entries */
+function heading(spec, y, size, end, opts = {}) {
+  const e = mk(T, 'head');
+  e.style.fontSize = size + 'px';
+  const ws = [];
+  for (const [txt, cls, at] of spec) {
+    if (txt === '\n') { e.appendChild(document.createElement('br')); continue; }
+    const s = document.createElement('span'); s.className = 'w ' + (cls || ''); s.textContent = txt;
+    if ((cls || '').includes('hand')) s.style.fontSize = '1.22em';
+    e.appendChild(s); ws.push({ s, at });
+  }
+  heads.push({ e, ws, y, end, x: opts.x ?? W / 2, ax: opts.ax ?? .5 });
+}
+function renderHeads(t) {
+  for (const h of heads) {
+    const first = Math.min(...h.ws.map((w) => w.at));
+    const vis = t >= first - .01 && t < h.end + .3;
+    if (!vis) { h.e.style.display = 'none'; continue; }
+    const out = seg(t, h.end, h.end + .25);
+    place(h.e, h.x, h.y - out * 40, { o: 1 - out, ax: h.ax });
+    for (const w of h.ws) {
+      const k = seg(t, w.at, w.at + .3);
+      w.s.style.opacity = clamp(k * 3);
+      w.s.style.transform = `translateY(${(1 - oB(k)) * 60}px) rotate(${(1 - k) * -6}deg) scale(${lerp(.6, 1, oB(k)) + beatPulse(t, .0) })`;
+    }
+  }
+}
+
+// ---------- layout ----------
+const U = Math.min(W, H) / 1080;
+const HS = V ? 92 : 92;                         // heading size
+const headY = V ? 330 : 120;
+const winW = V ? 1000 : 1240, winH = winW * (900 / 1440) + 44;
+const winC = V ? [540, 1010] : [W / 2, 640];
+const guide = V ? { x: 540, y: 1600, size: 270 } : { x: 1745, y: 900, size: 220 };
+
+// ---------- scene A: the chaos ----------
+const NOTES = [
+  ['MIDTERM\nTHURSDAY!!', '#FF8FB8'], ['PA2 due\nSunday', '#FFE45E'], ['read\nch. 7–9', '#7BE3B8'], ['lab report', '#9AA5FF'],
+  ['quiz fri??', '#FFB04A'], ['cheat sheet\n(how??)', '#FFE45E'], ['group mtg\n6pm', '#FF8FB8'], ['FINAL\nDec 14', '#7BE3B8'],
+];
+const chaos = NOTES.map(([txt, col], i) => {
+  const e = mk(L, 'note', txt.replace('\n', '<br>'));
+  const sz = (V ? 250 : 220) * U;
+  Object.assign(e.style, { width: sz + 'px', height: sz + 'px', background: col, fontSize: (V ? 52 : 46) + 'px' });
+  const cols = V ? [[180, 820], [520, 760], [880, 850], [300, 1180], [760, 1150], [140, 1500], [560, 1480], [930, 1450]]
+    : [[300, 520], [700, 610], [1240, 560], [1630, 540], [480, 880], [930, 900], [1400, 870], [1760, 860]];
+  const [x, y] = cols[i];
+  return { e, x, y, r: ((i * 37) % 23) - 11, at: 0.5 + i * BEAT * 0.5 + (i > 5 ? .5 : 0) };
+});
+function renderChaos(t) {
+  for (const n of chaos) {
+    if (t < n.at || t > 6.6) { place(n.e, 0, 0, { o: 0 }); continue; }
+    const k = seg(t, n.at, n.at + .35);
+    const y = lerp(-300, n.y, oB(k));
+    const shake = t > 2 && t < 2.5 ? Math.sin(t * 90 + n.x) * 6 : 0;
+    // 6.0: everything gets swept away on the beat
+    const sw = seg(t, 6.0, 6.5);
+    const dx = oC(sw) * (n.x < W / 2 ? -1 : 1) * W * .8, dy = -oC(sw) * 200;
+    place(n.e, n.x + shake + dx, y + dy, { r: n.r * (1 + sw * 3) + shake * .3, o: 1 - sw * .3 });
+  }
+}
+
+// ---------- browser window ----------
+const win = mk(L, 'win');
+win.innerHTML = `<div class="bar"><i style="background:#FF6B6B"></i><i style="background:#FFD43B"></i><i style="background:#3AD6A3"></i><div class="url">scrawlie.app</div></div><div class="view"></div>`;
+Object.assign(win.style, { width: winW + 'px', height: winH + 'px' });
+const view = win.querySelector('.view');
+const IMGS = {};
+for (const n of ['addcourses', 'today', 'calendar', 'connect', 'chat', 'examprep', 'course', 'landing']) {
+  const im = document.createElement('img'); im.src = `assets/${n}.png`; im.style.width = winW + 'px'; im.style.display = 'none'; view.appendChild(im); IMGS[n] = im;
+}
+/** which screen + where to zoom: [startTime, image, [zoom pts], [fx pts], [fy pts]] */
+const SHOTS = [
+  [10.5, 'addcourses', [[10.5, 1.0], [14, 1.12]], [[10.5, .5]], [[10.5, .28], [14, .3]]],
+  [14.0, 'today', [[14, 1.0], [15, 1.0], [16, 1.55], [17.8, 1.55]], [[14, .5], [15, .5], [16, .3], [17.8, .32]], [[14, .4], [15, .4], [16, .33], [17.8, .36]]],
+  [18.0, 'calendar', [[18, 1.0], [19.6, 1.2]], [[18, .5], [19.6, .55]], [[18, .3], [19.6, .3]]],
+  [20.0, 'connect', [[20, 1.0], [21, 1.35], [23.9, 1.4]], [[20, .5], [21, .32], [23.9, .32]], [[20, .3], [21, .32], [23.9, .5]]],
+  [24.0, 'chat', [[24, 1.0], [25, 1.9], [27.9, 2.0]], [[24, .5], [25, .5], [27.9, .5]], [[24, .3], [25, .12], [27.9, .2]]],
+  [28.0, 'examprep', [[28, 1.25], [29.9, 1.25]], [[28, .5]], [[28, .6], [29.9, .9]]],
+  [30.0, 'course', [[30, 1.3], [30.6, 2.0], [31.9, 2.05]], [[30, .5], [30.6, .68], [31.9, .68]], [[30, .3], [30.6, .36], [31.9, .37]]],
+  [32.0, 'course', [[32, 1.0], [33, 1.3], [35.9, 1.3]], [[32, .5], [33, .5], [35.9, .5]], [[32, .3], [33, .25], [35.9, .62]]],
+  [36.0, 'landing', [[36, 1.0], [39.9, 1.08]], [[36, .5]], [[36, .3], [39.9, .35]]],
+];
+const viewH = winH - 44;
+let curZoom = { z: 1, fx: .5, fy: .5, im: null };
+function renderWin(t) {
+  // the window is on screen from 10.5 to 40
+  const inK = seg(t, 10.5, 11.0), outK = seg(t, 39.6, 40.1);
+  if (t < 10.5 || t > 40.1) { place(win, 0, 0, { o: 0 }); return; }
+  let shot = SHOTS[0];
+  for (const s of SHOTS) if (t >= s[0]) shot = s;
+  for (const [n, im] of Object.entries(IMGS)) im.style.display = n === shot[1] ? 'block' : 'none';
+  const im = IMGS[shot[1]];
+  const z = kf(t, shot[2]), fx = kf(t, shot[3]), fy = kf(t, shot[4]);
+  const imgH = winW * (900 / 1440) * (im.naturalHeight / im.naturalWidth) / (900 / 1440);
+  const sW = winW * z, sH = imgH * z;
+  const tx = clamp(winW / 2 - fx * sW, winW - sW, 0), ty = clamp(viewH / 2 - fy * sH, Math.min(0, viewH - sH), 0);
+  im.style.transform = `translate(${tx}px, ${ty}px) scale(${z})`;
+  curZoom = { z, tx, ty, im };
+  // screen change: a quick whip on the beat
+  const since = t - shot[0];
+  const whip = shot[0] > 10.5 && since < .3 ? (1 - oC(since / .3)) : 0;
+  const drift = Math.sin(t * .6) * 2.5;
+  let [cx, cy] = winC, sc = 1;
+  // 34–36: laptop + phone, the window slides aside
+  const side = seg(t, 34, 34.5) - seg(t, 35.8, 36.2);
+  if (side > 0) { cx = lerp(cx, V ? 540 : 760, oC(side)); cy = lerp(cy, V ? 860 : 640, oC(side)); sc = lerp(1, V ? .72 : .8, oC(side)); }
+  place(win, cx, cy + (1 - oC(inK)) * 500 + outK * 60, { s: sc * (1 - whip * .04) * (1 - outK * .1), o: clamp(inK * 2) * (1 - outK), rx: 4 + drift * .4, ry: (V ? 0 : -6) + drift - whip * 8 });
+}
+/** a point in the current screenshot (fractions) → stage coordinates (approx, ignores the small 3D tilt) */
+function winPoint(fx, fy) {
+  const { z, tx, ty, im } = curZoom; if (!im) return [0, 0];
+  const imgH = winW * im.naturalHeight / im.naturalWidth;
+  const x = tx + fx * winW * z, y = ty + fy * imgH * z;
+  return [winC[0] - winW / 2 + x, winC[1] - winH / 2 + 44 + y];
+}
+
+// ---------- syllabus files flying in ----------
+const FILES = ['COMP 535 outline.pdf', 'ECSE 551 syllabus.pdf', 'MATH 240 outline.pdf'].map((n, i) => {
+  const e = mk(T, 'file', `<span class="tag">PDF</span><div>${n}</div><div class="ln"></div><div class="ln" style="width:80%"></div><div class="ln"></div><div class="ln" style="width:60%"></div>`);
+  return { e, at: 11.0 + i * BEAT, i };
+});
+function renderFiles(t) {
+  for (const f of FILES) {
+    const k = seg(t, f.at, f.at + .45), gone = seg(t, f.at + .45, f.at + .7);
+    if (t < f.at || gone >= 1) { place(f.e, 0, 0, { o: 0 }); continue; }
+    const sx = V ? 540 + (f.i - 1) * 260 : -200, sy = V ? H + 200 : 300 + f.i * 230;
+    const ex = winC[0] + (f.i - 1) * 60, ey = winC[1] - 40;
+    const arc = Math.sin(k * Math.PI) * -160;
+    place(f.e, lerp(sx, ex, oC(k)), lerp(sy, ey, oC(k)) + arc, { r: lerp(-14 + f.i * 10, 0, k), s: lerp(1, .5, gone), o: 1 - gone });
+  }
+}
+
+// ---------- cursor ----------
+const cur = mk(T, '', `<svg width="44" height="54" viewBox="0 0 22 27"><path d="M2 2 L2 21 L7 16.5 L10.5 24.5 L14 23 L10.6 15 L17 15 Z" fill="#fff" stroke="#1B1E3F" stroke-width="1.8" stroke-linejoin="round"/></svg>`);
+const clickRing = mk(T, '', '');
+Object.assign(clickRing.style, { width: '70px', height: '70px', border: '5px solid #FFE45E', borderRadius: '50%' });
+function renderCursor(t) {
+  // [time, fx, fy] in screenshot fractions; clicks at listed times
+  let pos = null, click = -1;
+  if (t >= 15.4 && t < 17.8) { // tick off a session in Today's plan
+    const p0 = [.9, .9], p1 = [.222, .342];
+    const k = oC(seg(t, 15.4, 16.4));
+    pos = winPoint(lerp(p0[0], p1[0], k), lerp(p0[1], p1[1], k)); click = 16.5;
+  } else if (t >= 21.0 && t < 23.6) {
+    const k = oC(seg(t, 21.0, 22.0));
+    pos = winPoint(lerp(.6, .27, k), lerp(.8, .62, k)); click = 22.0;
+  } else if (t >= 30.6 && t < 31.95) { // clicks "Like my lecture"
+    const k = oC(seg(t, 30.6, 31.1));
+    pos = winPoint(lerp(.55, .70, k), lerp(.62, .39, k)); click = 31.0;
+  }
+  if (!pos) { place(cur, 0, 0, { o: 0 }); place(clickRing, 0, 0, { o: 0 }); return; }
+  const press = t > click && t < click + .15 ? .85 : 1;
+  place(cur, pos[0], pos[1], { ax: .05, ay: .05, s: press });
+  const rk = seg(t, click, click + .45);
+  place(clickRing, pos[0], pos[1], { s: lerp(.3, 1.4, oC(rk)), o: t >= click ? (1 - rk) : 0 });
+}
+
+// ---------- paper confetti (on the tick, and at the end) ----------
+const CONF = [...Array(46)].map((_, i) => { const e = mk(T, 'conf'); e.style.background = ['#FFE45E', '#FF8FB8', '#7BE3B8', '#9AA5FF', '#FFB04A'][i % 5]; return { e, i }; });
+function renderConfetti(t) {
+  const bursts = [16.5, 42.0];
+  let b = null; for (const x of bursts) if (t >= x && t < x + 1.6) b = x;
+  for (const c of CONF) {
+    if (b === null) { place(c.e, 0, 0, { o: 0 }); continue; }
+    const k = t - b, a = (c.i * 137.5) * Math.PI / 180, sp = 380 + (c.i * 53) % 420;
+    const origin = b === 16.5 ? winPoint(.222, .342) : [W / 2, V ? 900 : 430];
+    const x = origin[0] + Math.cos(a) * sp * k, y = origin[1] + Math.sin(a) * sp * k * .8 + 900 * k * k;
+    place(c.e, x, y, { r: k * 720 + c.i * 20, o: 1 - seg(k, 1.1, 1.6), s: .8 + (c.i % 3) * .3 });
+  }
+}
+
+// ---------- speech bubbles next to the mascot ----------
+const BUBBLES = [
+  [12.5, 13.95, 'Reading 3 syllabuses…'],
+  [13.0, 13.95, '<b>✓</b> Found 14 deadlines'],
+  [13.5, 13.95, '<b>✓</b> Building your plan'],
+  [22.5, 23.9, 'Dates move? Your plan does too.'],
+  [26.0, 27.9, '<b>✓</b> Explained like your lecturer did'],
+].map(([a, b, html], i) => ({ e: mk(T, 'bubble', html), a, b, i }));
+function renderBubbles(t) {
+  for (const bb of BUBBLES) {
+    const { s, o } = popIO(t, bb.a, bb.b);
+    const stackIdx = bb.i < 3 ? bb.i : 0;
+    const x = V ? 540 : guide.x - 150, y = V ? 1350 - (2 - stackIdx) * 0 + stackIdx * 0 : guide.y - 220;
+    const yy = V ? 1290 + stackIdx * 0 - (bb.i < 3 ? (2 - bb.i) * 82 : 0) : guide.y - 180 - (bb.i < 3 ? (2 - bb.i) * 82 : 0);
+    place(bb.e, x, yy, { s, o, ax: V ? .5 : 1, r: -1.5 + (bb.i % 2) * 2 });
+  }
+}
+
+// ---------- chips: school systems, countries ----------
+const CHIPS = [
+  [20.0, 23.9, 'Brightspace', '#FFE45E', V ? [210, 640] : [300, 330]],
+  [20.5, 23.9, 'Canvas', '#FF8FB8', V ? [460, 600] : [300, 470]],
+  [21.0, 23.9, 'Moodle', '#7BE3B8', V ? [690, 640] : [300, 610]],
+  [21.5, 23.9, 'Blackboard', '#9AA5FF', V ? [900, 600] : [300, 750]],
+  [37.0, 39.9, 'Canada', '#FF8FB8', V ? [380, 1470] : [760, 1010]],
+  [37.5, 39.9, 'UK', '#9AA5FF', V ? [700, 1470] : [1160, 1010]],
+].map(([a, b, txt, col, [x, y]], i) => { const e = mk(T, 'chip', txt); e.style.background = col; return { e, a, b, x, y, i }; });
+function renderChips(t) { for (const c of CHIPS) { const { s, o } = popIO(t, c.a, c.b); place(c.e, c.x, c.y, { s, o, r: (c.i % 2 ? 3 : -3) }); } }
+
+// ---------- rotating word ("Make me a ___") ----------
+const ROT = ['cheat sheet', 'practice paper', 'revision sheet', 'derivation sheet'];
+const rotWrap = mk(T, 'head'); rotWrap.style.fontSize = (V ? 66 : 84) + 'px';
+rotWrap.innerHTML = `<span class="w">Make me a</span> <span class="w hand y" style="font-size:1.25em;display:inline-block;min-width:${V ? 470 : 600}px;text-align:left" id="rw"></span>`;
+const rw = rotWrap.querySelector('#rw');
+function renderRotator(t) {
+  if (t < 28 || t > 30.0) { place(rotWrap, 0, 0, { o: 0 }); return; }
+  const i = Math.floor((t - 28) / BEAT) % ROT.length;
+  const f = ((t - 28) / BEAT) % 1;
+  rw.textContent = ROT[i];
+  rw.style.transform = `translateY(${(1 - oB(clamp(f * 3))) * 40}px)`;
+  rw.style.opacity = clamp(.35 + f * 5);
+  const o = seg(t, 28, 28.15) * (1 - seg(t, 29.8, 30.0));
+  place(rotWrap, W / 2 + (V ? 0 : -60), headY, { o });
+}
+
+// ---------- phones ----------
+const phones = ['phone_today', 'phone_course'].map((n, i) => {
+  const e = mk(L, 'phone', `<img src="assets/${n}.png" style="width:${V ? 300 : 280}px">`);
+  return { e, i };
+});
+function renderPhones(t) {
+  for (const p of phones) {
+    const a = 34.5 + p.i * BEAT, k = seg(t, a, a + .4), out = seg(t, 35.8, 36.2);
+    if (t < a || out >= 1) { place(p.e, 0, 0, { o: 0 }); continue; }
+    const x = V ? 330 + p.i * 400 : 1380 + p.i * 330, y = V ? 1420 : 600 + p.i * 40;
+    place(p.e, x, y + (1 - oB(k)) * 600 + out * 300, { r: p.i ? 5 : -4, o: 1 - out, s: V ? .62 : .8 });
+  }
+}
+
+// ---------- end card ----------
+const endWord = mk(T, '', `<div style="display:flex;align-items:center;gap:18px"><img src="assets/icon.png" style="width:0;height:0"><span class="hand" style="font-size:${V ? 170 : 150}px;color:#F4F5FF;transform:rotate(-3deg);display:inline-block">Scrawlie</span></div>`);
+const endTag = mk(T, 'head'); endTag.style.fontSize = (V ? 76 : 70) + 'px'; endTag.innerHTML = 'Your semester, <span class="hand y" style="font-size:1.25em">sorted.</span>';
+const endCta = mk(T, 'cta', 'Try it free →');
+const endUrl = mk(T, 'sub', 'scrawlie.app  ·  for uni & college students');
+const meetWord = mk(T, 'head'); meetWord.style.fontSize = (V ? 120 : 120) + 'px'; meetWord.innerHTML = 'Meet <span class="hand y" style="font-size:1.3em">Scrawlie.</span>';
+const meetSub = mk(T, 'sub', 'Your semester, sorted. Automatically.');
+function renderEnd(t) {
+  // "Meet Scrawlie" (7–9.9)
+  const m = popIO(t, 7.0, 9.7); place(meetWord, W / 2, V ? 520 : 200, m);
+  const ms = popIO(t, 8.0, 9.7); place(meetSub, W / 2, V ? 650 : 330, ms);
+  // end card (40.5+)
+  const w = popIO(t, 40.5, 99); place(endWord, W / 2, V ? 430 : 150, w);
+  const tg = popIO(t, 41.0, 99); place(endTag, W / 2, V ? 600 : 290, tg);
+  const c = popIO(t, 42.0, 99); place(endCta, W / 2, V ? 1530 : 860, { ...c, s: c.s * (1 + beatPulse(t, .03) * (t > 42.5 ? 1 : 0)) });
+  const u = popIO(t, 42.5, 99); place(endUrl, W / 2, V ? 1680 : 975, u);
+}
+
+// ---------- all the headings, word by word on the beat ----------
+const hb = (a, ...ws) => ws.map((w, i) => (Array.isArray(w) ? [w[0], w[1], a + (w[2] ?? i) * BEAT] : [w, '', a + i * BEAT]));
+if (V) {
+  heading([['You have', '', 0], ['\n'], ['3 midterms,', 'hand y', .5], ['\n'], ['2 assignments,', 'hand p', 1.0], ['\n'], ['a lab report', 'hand g', 1.5], ['\n'], ['and zero plan.', '', 2.0]], 420, 104, 3.9);
+  heading([['Sound', '', 4.0], ['familiar?', 'hand y', 4.5]], 330, 110, 5.9);
+  heading([['Drop in your', '', 10.0], ['\n'], ['syllabuses.', 'hand y', 10.5]], 300, HS, 13.9);
+  heading([['Your whole semester,', '', 14.0], ['\n'], ['planned.', 'hand g', 14.5]], 300, HS, 17.9);
+  heading([['Every deadline.', '', 18.0], ['\n'], ['One calendar.', 'hand p', 18.5]], 300, HS, 19.9);
+  heading([['Synced with', '', 20.0], ['\n'], ['your school.', 'hand y', 20.5]], 300, HS, 23.9);
+  heading([['A tutor that', '', 24.0], ['\n'], ['read your slides.', 'hand b', 24.5]], 300, HS, 27.9);
+  heading([['It explains it', '', 30.0], ['\n'], ['like your lecturer.', 'hand y', 30.5]], 300, HS, 31.9);
+  heading([['Every course.', '', 32.0], ['\n'], ['One toolbox.', 'hand g', 32.5]], 300, HS, 33.9);
+  heading([['On your laptop', '', 34.0], ['\n'], ['& your phone.', 'hand p', 34.5]], 300, HS, 35.9);
+  heading([['Made for', '', 36.0], ['uni & college', 'hand y', 36.5], ['\n'], ['students.', '', 37.0]], 300, HS, 37.9);
+  heading([['Free', 'hand y', 38.0], ['to start.', '', 38.5]], 300, 120, 39.9);
+} else {
+  heading([['You have', '', 0], ['3 midterms,', 'hand y', .5], ['\n'], ['2 assignments,', 'hand p', 1.0], ['a lab report', 'hand g', 1.5], ['\n'], ['and zero plan.', '', 2.0]], 230, 110, 3.9);
+  heading([['Sound', '', 4.0], ['familiar?', 'hand y', 4.5]], 150, 110, 5.9);
+  heading([['Drop in your', '', 10.0], ['syllabuses.', 'hand y', 10.5]], headY, HS, 13.9);
+  heading([['Your whole semester,', '', 14.0], ['planned.', 'hand g', 14.5]], headY, HS, 17.9);
+  heading([['Every deadline.', '', 18.0], ['One calendar.', 'hand p', 18.5]], headY, HS, 19.9);
+  heading([['Synced with', '', 20.0], ['your school.', 'hand y', 20.5]], headY, HS, 23.9);
+  heading([['A tutor that', '', 24.0], ['read your slides.', 'hand b', 24.5]], headY, HS, 27.9);
+  heading([['It explains it', '', 30.0], ['like your lecturer.', 'hand y', 30.5]], headY, HS, 31.9);
+  heading([['Every course.', '', 32.0], ['One toolbox.', 'hand g', 32.5]], headY, HS, 33.9);
+  heading([['On your laptop', '', 34.0], ['& your phone.', 'hand p', 34.5]], headY, HS, 35.9);
+  heading([['Made for', '', 36.0], ['uni & college', 'hand y', 36.5], ['students.', '', 37.0]], headY, HS, 37.9);
+  heading([['Free', 'hand y', 38.0], ['to start.', '', 38.5]], headY, 110, 39.9);
+}
+
+// ---------- the mascot's performance ----------
+function mascotAt(t) {
+  const s = { visible: false, x: W / 2, y: H / 2, size: 300, face: {}, peel: .22 + Math.sin(t * 1.3) * .05, armL: .4, armR: .4 };
+  const bob = beatPulse(t, .07);
+  const center = V ? { x: 540, y: 1150, size: 520 } : { x: W / 2, y: 690, size: 430 };
+  if (t < 4.0) return s;
+  s.visible = true;
+  if (t < 6.0) { // pops out of the pile, stressed
+    const k = seg(t, 4.0, 4.4);
+    const at = V ? { x: 540, y: 1220, size: 380 } : { x: W / 2, y: 700, size: 330 };
+    s.x = at.x; s.y = lerp(H + 300, at.y, oB(k)); s.size = at.size;
+    s.rotZ = Math.sin(t * 9) * .05 * (1 - k * .5); s.rotY = Math.sin(t * 2) * .25;
+    s.face = { worried: true, mouth: 'worried', sweat: true, sweatY: ((t * 30) % 10), lookX: t > 5 && t < 5.5 ? -5 : t >= 5.5 ? 5 : 0, blink: (t > 4.9 && t < 5.0) ? 0 : 1 };
+    s.armL = 1.1 + Math.sin(t * 14) * .3; s.armR = 1.1 + Math.sin(t * 14 + 1) * .3;
+    s.squash = bob * 1.2;
+    return s;
+  }
+  if (t < 10.0) { // jumps to the middle, becomes happy, ta-da, wink
+    const from = V ? { x: 540, y: 1220, size: 380 } : { x: W / 2, y: 700, size: 330 };
+    const k = seg(t, 6.0, 6.5);
+    s.x = lerp(from.x, center.x, oC(k)); s.y = lerp(from.y, center.y, k) - Math.sin(k * Math.PI) * 260; s.size = lerp(from.size, center.size, oC(k));
+    s.rotX = 0; s.rotY = Math.sin(k * Math.PI) * 6.283 * (k < 1 ? 1 : 0); // a full spin in the air
+    const land = seg(t, 6.5, 6.8);
+    s.squash = t >= 6.5 ? (1 - land) * .22 * Math.cos(land * 8) : -.08 * Math.sin(k * Math.PI);
+    s.face = t < 6.5 ? { mouth: 'o' } : t < 9.0 || t > 9.4 ? { eyes: t > 7 ? 'happy' : undefined, mouth: 'grin', blush: true } : { eyes: 'wink', mouth: 'grin', blush: true };
+    const taDa = seg(t, 7.0, 7.3) * (1 - seg(t, 8.6, 9.0));
+    s.armL = lerp(.4, 2.5, taDa); s.armR = lerp(.4, 2.5, taDa);
+    s.legL = s.legR = .06 + taDa * .15;
+    if (t > 6.8) s.squash += bob;
+    s.rotZ = Math.sin(t * 3) * .04;
+    // 9.5–10: shrink into the corner to be the guide
+    const g = seg(t, 9.5, 10.0);
+    s.x = lerp(s.x, guide.x, ioC(g)); s.y = lerp(s.y, guide.y, ioC(g)); s.size = lerp(s.size, guide.size, ioC(g));
+    return s;
+  }
+  if (t < 40.0) { // the guide: bobs on every beat and reacts
+    s.x = guide.x; s.y = guide.y; s.size = guide.size; s.squash = bob;
+    s.rotY = (V ? 0 : -0.35) + Math.sin(t * 1.1) * .12; s.rotZ = Math.sin(t * 2.2) * .03;
+    s.face = { mouth: 'smile', blink: ((t * 10) % 37) < 1.2 ? 0 : 1 };
+    if (t > 12.5 && t < 14.0) s.face = { lookY: 4, lookX: V ? 0 : -4, mouth: 'o' };                 // reading
+    if ((t > 14.0 && t < 15.0) || (t > 16.5 && t < 17.6)) { s.face = { eyes: 'happy', mouth: 'grin', blush: true }; s.armL = s.armR = 2.3; }
+    if (t > 26 && t < 28) s.face = { eyes: 'happy', mouth: 'grin' };
+    if (t > 22.5 && t < 23.9) { s.armR = 2.0 + Math.sin(t * 12) * .3; s.face = { mouth: 'grin' }; }
+    if (t > 38 && t < 40) { s.face = { eyes: 'happy', mouth: 'grin', blush: true }; s.armL = s.armR = 2.4; }
+    // point at the window (landscape: arm towards the left)
+    if (!V && ((t > 11 && t < 12.4) || (t > 18.2 && t < 19.8))) s.armL = 1.6;
+    if (V && ((t > 11 && t < 12.4) || (t > 18.2 && t < 19.8))) { s.armL = 2.2; s.armR = 2.2; }
+    return s;
+  }
+  // end card: back to the middle, waves, winks on the last beat
+  const k = seg(t, 40.0, 40.6);
+  const endPos = V ? { x: 540, y: 1080, size: 430 } : { x: W / 2, y: 575, size: 290 };
+  s.x = lerp(guide.x, endPos.x, ioC(k)); s.y = lerp(guide.y, endPos.y, ioC(k)) - Math.sin(k * Math.PI) * 200; s.size = lerp(guide.size, endPos.size, ioC(k));
+  s.rotY = Math.sin(t * 1.2) * .2; s.squash = bob;
+  s.face = t > 47.3 ? { eyes: 'wink', mouth: 'grin', blush: true } : { eyes: t > 42 && t < 42.8 ? 'happy' : undefined, mouth: 'grin', blush: true, blink: ((t * 10) % 31) < 1.2 ? 0 : 1 };
+  s.armR = t > 41 ? 2.3 + Math.sin(t * 10) * .45 : .4;
+  s.armL = .5;
+  return s;
+}
+
+window.render = (t) => {
+  renderHeads(t); renderChaos(t); renderWin(t); renderFiles(t); renderCursor(t); renderConfetti(t);
+  renderBubbles(t); renderChips(t); renderRotator(t); renderPhones(t); renderEnd(t);
+  mascot.render(mascotAt(t));
+};
+await document.fonts.ready;
+await Promise.all([...document.images].map((i) => i.complete ? 0 : new Promise((r) => { i.onload = r; i.onerror = r; })));
+window.render(0);
+window.ready = true;
+</script></body></html>
