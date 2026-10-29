@@ -168,7 +168,7 @@ Everything lives in **GitHub**.
 ## 8. Reusable pieces already built (from the Scrawlie project)
 
 Repo **github.com/mousamohib/studybuddy** (the app is now called **Scrawlie**: an AI study planner for uni and college students in Canada and the UK).
-- **Video engine** (built 27 Oct 2026). It's in the old session's scratch folder, not in the repo, so it must be recreated or committed:
+- **Video engine** (built 27 Oct 2026), saved in the repo at **`marketing/video/`** (see its README):
   - a **3D sticky-note mascot** in three.js (expressions, arms, legs, peeling corner)
   - scenes in HTML/CSS, driven by a time-based `render(t)` function
   - rendered frame by frame with **Playwright**, then **ffmpeg** to MP4
